@@ -94,7 +94,7 @@
     /* ─── FOCUS MODE ─── */
     #app.focus-mode { grid-template-columns: 0px 1fr; }
     #app.focus-mode #sidebar { overflow: hidden; border-right: none; width: 0; min-width: 0; }
-    #app.focus-mode #title-bar { display: none !important; }
+    #app.focus-mode #title-bar { border-bottom: none; }
     #app.focus-mode #statusbar { display: none !important; }
     #app.focus-mode ~ #sidebar-toggle { display: none !important; }
 
@@ -244,7 +244,7 @@
       cursor: pointer; transition: all 0.15s; white-space: nowrap;
     }
     #focus-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
-    #editor-wrap { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+    #editor-wrap { flex: 1; overflow: hidden; display: flex; flex-direction: column; position: relative; }
     #empty-editor {
       flex: 1; display: flex; align-items: center; justify-content: center;
       flex-direction: column; gap: 8px; color: var(--text-muted);
@@ -275,12 +275,20 @@
     #milkdown-editor {
       flex: 1; overflow-y: auto; padding: 0;
       scrollbar-width: thin; scrollbar-color: var(--border) transparent;
-      caret-color: #f0c040;
+      caret-color: transparent;
     }
-    #milkdown-editor .ProseMirror { caret-color: #f0c040; }
-    #milkdown-editor .cm-editor .cm-cursor { border-left-color: #f0c040 !important; }
+    #milkdown-editor .ProseMirror { caret-color: transparent; position: relative; }
+    #milkdown-editor .cm-editor .cm-cursor { border-left-color: #f0c040 !important; border-left-width: 4px !important; }
     @keyframes blink-caret { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+    #custom-caret {
+      position: absolute; width: 3px; height: 1.2em;
+      background: #f0c040; pointer-events: none;
+      z-index: 50; border-radius: 1px;
+      animation: blink-caret 1s step-end infinite;
+      display: none;
+    }
     #note-title { caret-color: #f0c040; }
+    #milkdown-editor .ProseMirror, #note-title { font-kerning: none; }
     #milkdown-editor::-webkit-scrollbar { width: 6px; }
     #milkdown-editor::-webkit-scrollbar-track { background: transparent; }
     #milkdown-editor::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
@@ -497,6 +505,7 @@
     </div>
     <div id="editor-wrap" style="display:none;">
       <div id="milkdown-editor"></div>
+      <div id="custom-caret"></div>
     </div>
     <div id="empty-editor">
       <div class="icon">N</div>
@@ -993,6 +1002,35 @@ async function initApp() {
     loading.style.display = 'none';
   }
 }
+
+// ─── CUSTOM CARET ─────────────────────────────────────────
+const customCaret = document.getElementById('custom-caret');
+const editorWrapEl = document.getElementById('editor-wrap');
+
+function updateCustomCaret() {
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0 || !sel.isCollapsed) {
+    customCaret.style.display = 'none';
+    return;
+  }
+  const proseMirror = document.querySelector('#milkdown-editor .ProseMirror');
+  if (!proseMirror || !proseMirror.contains(sel.anchorNode)) {
+    customCaret.style.display = 'none';
+    return;
+  }
+  const range = sel.getRangeAt(0);
+  const rect = range.getClientRects()[0] || range.getBoundingClientRect();
+  const wrapRect = editorWrapEl.getBoundingClientRect();
+  if (!rect || rect.height === 0) { customCaret.style.display = 'none'; return; }
+  customCaret.style.display = 'block';
+  customCaret.style.left = (rect.left - wrapRect.left) + 'px';
+  customCaret.style.top = (rect.top - wrapRect.top) + 'px';
+  customCaret.style.height = rect.height + 'px';
+}
+
+document.addEventListener('selectionchange', updateCustomCaret);
+document.addEventListener('keyup', updateCustomCaret);
+document.addEventListener('click', () => requestAnimationFrame(updateCustomCaret));
 
 if (isAuthed()) {
   initApp();
