@@ -1,0 +1,31 @@
+.milkdown {
+  --crepe-color-background: #111111;
+  --crepe-color-on-background: #e8e8e8;
+  --crepe-color-surface: #0a0a0a;
+  --crepe-color-surface-low: #080808;
+  --crepe-color-on-surface: #e8e8e8;
+  --crepe-color-on-surface-variant: #999999;
+  --crepe-color-outline: #999999;
+  --crepe-color-primary: #cccccc;
+  --crepe-color-secondary: #222222;
+  --crepe-color-on-secondary: #e8e8e8;
+  --crepe-color-inverse: #e8e8e8;
+  --crepe-color-on-inverse: #111111;
+  --crepe-color-inline-code: #d0d0d0;
+  --crepe-color-error: #e06060;
+  --crepe-color-hover: #1a1a1a;
+  --crepe-color-selected: #222222;
+  --crepe-color-inline-area: #1a1a1a;
+
+  --crepe-font-title: 'MonaS12', 'Segoe UI', sans-serif;
+  --crepe-font-default: 'MonaS12', 'Segoe UI', sans-serif;
+  --crepe-font-code:
+    'Fira Code', Menlo, Monaco, 'Courier New', Courier, monospace;
+
+  --crepe-shadow-1:
+    0px 1px 3px 0px rgba(0, 0, 0, 0.5),
+    0px 1px 4px 1px rgba(0, 0, 0, 0.3);
+  --crepe-shadow-2:
+    0px 1px 3px 0px rgba(0, 0, 0, 0.5),
+    0px 2px 8px 2px rgba(0, 0, 0, 0.3);
+}

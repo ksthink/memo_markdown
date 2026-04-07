@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Markdown Editor</title>
+  <link rel="stylesheet" href="milkdown-common.css" />
+  <link rel="stylesheet" href="milkdown-frame-dark.css" />
+  <style>
+    @import url("https://fontcdn-six.vercel.app/f/monas12.css");
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-primary: #1a1b2e;
+      --bg-secondary: #151623;
+      --bg-sidebar: #12131f;
+      --bg-hover: #1f2037;
+      --bg-active: #282a48;
+      --text-primary: #e8eaf4;
+      --text-secondary: #9b9ebe;
+      --text-muted: #6b6e8a;
+      --accent: #7c6cf0;
+      --accent-hover: #6b5ce0;
+      --border: #2a2c45;
+      --success: #4ade80;
+      --danger: #f87171;
+      --font: 'MonaS12', 'Segoe UI', sans-serif;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: var(--font);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      overflow: hidden;
+    }
+
+    /* ─── LOGIN ─── */
+    #login-screen {
+      position: fixed; inset: 0;
+      background: var(--bg-primary);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 9000;
+    }
+
+    .login-box {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 40px 36px 32px;
+      width: 340px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+
+    .login-box h2 { font-size: 1.4rem; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; text-align: center; }
+    .login-box .sub { font-size: 0.82rem; color: var(--text-muted); text-align: center; margin-bottom: 28px; }
+    .login-box label { display: block; font-size: 0.78rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; }
+
+    #pw-input {
+      width: 100%; padding: 10px 14px;
+      border: 1.5px solid var(--border); border-radius: 8px;
+      font-size: 1rem; background: var(--bg-primary);
+      color: var(--text-primary); outline: none;
+      font-family: var(--font); letter-spacing: 0.15em;
+      transition: border-color 0.2s;
+    }
+    #pw-input:focus { border-color: var(--accent); }
+    #pw-input.error { border-color: var(--danger); animation: shake 0.3s; }
+
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      25% { transform: translateX(-6px); }
+      75% { transform: translateX(6px); }
+    }
+
+    #login-btn {
+      margin-top: 16px; width: 100%; padding: 11px;
+      background: var(--accent); color: #fff;
+      font-size: 0.92rem; font-weight: 700; font-family: var(--font);
+      border: none; border-radius: 8px; cursor: pointer;
+      transition: background 0.15s;
+    }
+    #login-btn:hover { background: var(--accent-hover); }
+    #login-error { margin-top: 10px; font-size: 0.78rem; color: var(--danger); text-align: center; min-height: 18px; }
+
+    /* ─── LAYOUT ─── */
+    #app {
+      display: none;
+      height: 100vh;
+      grid-template-columns: 280px 1fr;
+      grid-template-rows: 1fr auto;
+    }
+    #app.active { display: grid; }
+
+    /* ─── SIDEBAR ─── */
+    #sidebar {
+      grid-row: 1 / 3;
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+
+    .sidebar-header { padding: 16px; border-bottom: 1px solid var(--border); }
+    .sidebar-header h1 {
+      font-size: 1.05rem; font-weight: 700; color: var(--text-primary);
+      margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+    }
+    .sidebar-header h1 .logo {
+      width: 24px; height: 24px; border-radius: 6px;
+      background: var(--accent); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.85rem; font-weight: 800;
+    }
+
+    #new-note-btn {
+      width: 100%; padding: 9px;
+      background: var(--accent); color: #fff;
+      font-size: 0.82rem; font-weight: 700; font-family: var(--font);
+      border: none; border-radius: 8px; cursor: pointer;
+      transition: background 0.15s;
+    }
+    #new-note-btn:hover { background: var(--accent-hover); }
+
+    .sidebar-search { padding: 10px 16px; }
+    .search-wrap { position: relative; }
+    .search-wrap svg {
+      position: absolute; left: 10px; top: 50%;
+      transform: translateY(-50%); color: var(--text-muted); pointer-events: none;
+    }
+
+    #sidebar-search {
+      width: 100%; padding: 7px 12px 7px 32px;
+      background: var(--bg-primary); border: 1px solid var(--border);
+      border-radius: 6px; color: var(--text-primary);
+      font-size: 0.8rem; font-family: var(--font); outline: none;
+      transition: border-color 0.2s;
+    }
+    #sidebar-search:focus { border-color: var(--accent); }
+    #sidebar-search::placeholder { color: var(--text-muted); }
+
+    #note-list { flex: 1; overflow-y: auto; padding: 4px 8px; }
+    #note-list::-webkit-scrollbar { width: 4px; }
+    #note-list::-webkit-scrollbar-track { background: transparent; }
+    #note-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .note-item {
+      padding: 10px 12px; border-radius: 6px; cursor: pointer;
+      transition: background 0.1s; position: relative; margin-bottom: 2px;
+    }
+    .note-item:hover { background: var(--bg-hover); }
+    .note-item.active { background: var(--bg-active); }
+    .note-item-title { font-size: 0.84rem; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .note-item-meta { font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; }
+    .note-item-preview { font-size: 0.72rem; color: var(--text-secondary); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .note-item .delete-btn {
+      position: absolute; top: 8px; right: 8px;
+      background: none; border: none; color: var(--text-muted);
+      cursor: pointer; font-size: 14px; padding: 2px 4px; border-radius: 4px;
+      opacity: 0; transition: opacity 0.15s, color 0.15s;
+    }
+    .note-item:hover .delete-btn { opacity: 1; }
+    .note-item .delete-btn:hover { background: rgba(248,113,113,0.15); color: var(--danger); }
+
+    .sidebar-footer {
+      padding: 10px 16px; border-top: 1px solid var(--border);
+      font-size: 0.7rem; color: var(--text-muted); text-align: center;
+    }
+
+    /* ─── MAIN ─── */
+    #main { display: flex; flex-direction: column; overflow: hidden; }
+
+    #title-bar {
+      padding: 14px 24px 10px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center;
+    }
+    #note-title {
+      flex: 1; border: none; background: transparent;
+      font-size: 1.3rem; font-weight: 700; color: var(--text-primary);
+      outline: none; font-family: var(--font);
+    }
+    #note-title::placeholder { color: var(--text-muted); }
+
+    #editor-wrap { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+
+    #empty-editor {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 8px; color: var(--text-muted);
+    }
+    #empty-editor .icon {
+      width: 56px; height: 56px; border-radius: 14px;
+      background: var(--bg-secondary); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem; font-weight: 800; color: var(--accent);
+    }
+    #empty-editor p { font-size: 0.9rem; }
+
+    /* ─── STATUS BAR ─── */
+    #statusbar {
+      padding: 6px 24px; border-top: 1px solid var(--border);
+      background: var(--bg-secondary);
+      display: flex; align-items: center; gap: 16px;
+      font-size: 0.72rem; color: var(--text-muted);
+    }
+    #save-status { display: flex; align-items: center; gap: 4px; }
+    .dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+    .dot.saved { background: var(--success); }
+    .dot.saving { background: #facc15; }
+    .dot.unsaved { background: var(--text-muted); }
+    .status-sep { color: var(--border); }
+
+    /* ─── MILKDOWN OVERRIDES ─── */
+    #milkdown-editor {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+    #milkdown-editor::-webkit-scrollbar { width: 6px; }
+    #milkdown-editor::-webkit-scrollbar-track { background: transparent; }
+    #milkdown-editor::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    #milkdown-editor .milkdown {
+      height: 100%;
+      background: var(--bg-primary) !important;
+      color: var(--text-primary) !important;
+      font-family: var(--font) !important;
+      --crepe-color-background: var(--bg-primary);
+      --crepe-color-on-background: var(--text-primary);
+      --crepe-color-surface: var(--bg-secondary);
+      --crepe-color-surface-low: var(--bg-sidebar);
+      --crepe-color-on-surface: var(--text-primary);
+      --crepe-color-on-surface-variant: var(--text-secondary);
+      --crepe-color-outline: var(--border);
+      --crepe-color-primary: var(--accent);
+      --crepe-color-secondary: var(--bg-active);
+      --crepe-color-on-secondary: var(--text-primary);
+      --crepe-color-inverse: var(--text-primary);
+      --crepe-color-on-inverse: var(--bg-primary);
+      --crepe-color-inline-code: #e879f9;
+      --crepe-color-hover: var(--bg-hover);
+      --crepe-color-selected: var(--bg-active);
+      --crepe-color-inline-area: var(--bg-hover);
+      --crepe-font-default: var(--font);
+      --crepe-font-title: var(--font);
+      --crepe-font-code: 'Fira Code', Menlo, Monaco, monospace;
+    }
+
+    #milkdown-editor .milkdown .editor {
+      padding: 32px 48px !important;
+      min-height: 100%;
+      max-width: 820px;
+      margin: 0 auto;
+      outline: none !important;
+    }
+
+    #milkdown-editor .milkdown .editor > * {
+      color: var(--text-primary);
+    }
+
+    /* ─── READABILITY OVERRIDES ─── */
+    #milkdown-editor .milkdown .ProseMirror p {
+      font-size: 15.5px;
+      line-height: 1.8;
+      padding: 3px 0;
+      letter-spacing: 0.01em;
+      word-break: keep-all;
+      overflow-wrap: break-word;
+    }
+
+    #milkdown-editor .milkdown .ProseMirror h1,
+    #milkdown-editor .milkdown .ProseMirror h2,
+    #milkdown-editor .milkdown .ProseMirror h3,
+    #milkdown-editor .milkdown .ProseMirror h4,
+    #milkdown-editor .milkdown .ProseMirror h5,
+    #milkdown-editor .milkdown .ProseMirror h6 {
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      word-break: keep-all;
+    }
+
+    #milkdown-editor .milkdown .ProseMirror h1 {
+      font-size: 1.95rem;
+      line-height: 1.3;
+      margin-top: 40px;
+      margin-bottom: 8px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    #milkdown-editor .milkdown .ProseMirror h2 {
+      font-size: 1.55rem;
+      line-height: 1.35;
+      margin-top: 36px;
+      margin-bottom: 6px;
+    }
+    #milkdown-editor .milkdown .ProseMirror h3 {
+      font-size: 1.28rem;
+      line-height: 1.4;
+      margin-top: 28px;
+      margin-bottom: 4px;
+    }
+    #milkdown-editor .milkdown .ProseMirror h4 {
+      font-size: 1.12rem;
+      line-height: 1.45;
+      margin-top: 24px;
+      margin-bottom: 2px;
+    }
+    #milkdown-editor .milkdown .ProseMirror h5 {
+      font-size: 1rem;
+      line-height: 1.5;
+      margin-top: 20px;
+    }
+    #milkdown-editor .milkdown .ProseMirror h6 {
+      font-size: 0.92rem;
+      line-height: 1.5;
+      margin-top: 16px;
+      color: var(--text-secondary);
+    }
+
+    #milkdown-editor .milkdown .ProseMirror blockquote {
+      padding-left: 20px;
+      margin: 12px 0;
+      color: var(--text-secondary);
+      font-style: italic;
+    }
+    #milkdown-editor .milkdown .ProseMirror blockquote::before {
+      background: var(--accent);
+      opacity: 0.6;
+      width: 3px;
+    }
+
+    #milkdown-editor .milkdown .ProseMirror code {
+      font-size: 0.88em;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: rgba(124, 108, 240, 0.1);
+      color: #d4b4ff;
+    }
+
+    #milkdown-editor .milkdown .ProseMirror a {
+      color: #93b5ff;
+      text-decoration-color: rgba(147, 181, 255, 0.35);
+      text-underline-offset: 3px;
+      transition: color 0.15s;
+    }
+    #milkdown-editor .milkdown .ProseMirror a:hover {
+      color: #b5d0ff;
+      text-decoration-color: rgba(147, 181, 255, 0.7);
+    }
+
+    #milkdown-editor .milkdown .ProseMirror hr {
+      margin: 24px 0;
+      border: none;
+      height: 1px;
+      background: var(--border);
+    }
+
+    #milkdown-editor .milkdown .ProseMirror ul,
+    #milkdown-editor .milkdown .ProseMirror ol {
+      padding-left: 24px;
+    }
+    #milkdown-editor .milkdown .ProseMirror li {
+      margin-bottom: 4px;
+    }
+    #milkdown-editor .milkdown .ProseMirror li p {
+      padding: 1px 0;
+    }
+
+    #milkdown-editor .milkdown .milkdown-code-block {
+      margin: 16px 0;
+      border-radius: 8px;
+    }
+    #milkdown-editor .milkdown .milkdown-code-block .cm-editor {
+      font-size: 13.5px;
+      line-height: 1.6;
+    }
+
+    #milkdown-editor .milkdown .ProseMirror pre {
+      border-radius: 8px;
+      padding: 14px 18px;
+    }
+
+    /* ─── LIST MARKERS & CHECKBOXES (DARK MODE) ─── */
+    #milkdown-editor .milkdown .milkdown-list-item-block li .label-wrapper {
+      color: var(--accent) !important;
+    }
+    #milkdown-editor .milkdown .milkdown-list-item-block li .label-wrapper svg {
+      fill: var(--accent) !important;
+    }
+    #milkdown-editor .milkdown .milkdown-list-item-block li .label-wrapper .label {
+      color: var(--accent);
+      font-weight: 600;
+      font-size: 15px;
+    }
+
+    /* Bullet dot */
+    #milkdown-editor .milkdown .milkdown-list-item-block li .label-wrapper .label::before {
+      color: var(--accent);
+    }
+
+    /* Checkbox unchecked */
+    #milkdown-editor .milkdown .milkdown-list-item-block li .label-wrapper .unchecked svg {
+      fill: var(--text-secondary) !important;
+      stroke: var(--text-secondary);
+      opacity: 0.8;
+    }
+    #milkdown-editor .milkdown .milkdown-list-item-block li .label-wrapper .unchecked:hover svg {
+      fill: var(--accent) !important;
+      opacity: 1;
+    }
+
+    /* Checkbox checked */
+    #milkdown-editor .milkdown .milkdown-list-item-block li .label-wrapper .checked svg {
+      fill: var(--accent) !important;
+      opacity: 1;
+    }
+
+    /* Ordered list number */
+    #milkdown-editor .milkdown .ProseMirror ol {
+      list-style: none;
+    }
+
+    /* Toolbar icons: brighter in dark mode */
+    #milkdown-editor .milkdown .milkdown-toolbar .toolbar-item svg {
+      color: var(--text-secondary) !important;
+      fill: var(--text-secondary) !important;
+    }
+    #milkdown-editor .milkdown .milkdown-toolbar .toolbar-item:hover svg {
+      color: var(--text-primary) !important;
+      fill: var(--text-primary) !important;
+    }
+    #milkdown-editor .milkdown .milkdown-toolbar .toolbar-item.active svg {
+      color: var(--accent) !important;
+      fill: var(--accent) !important;
+    }
+
+    /* Block handle icons */
+    #milkdown-editor .milkdown .milkdown-block-handle .operation-item svg {
+      fill: var(--text-muted) !important;
+    }
+    #milkdown-editor .milkdown .milkdown-block-handle .operation-item:hover svg {
+      fill: var(--text-primary) !important;
+    }
+
+    /* Table dark mode */
+    #milkdown-editor .milkdown .ProseMirror table {
+      border-collapse: collapse;
+    }
+    #milkdown-editor .milkdown .ProseMirror th,
+    #milkdown-editor .milkdown .ProseMirror td {
+      border: 1px solid var(--border);
+      padding: 8px 12px;
+    }
+    #milkdown-editor .milkdown .ProseMirror th {
+      background: var(--bg-secondary);
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+    #milkdown-editor .milkdown .ProseMirror td {
+      color: var(--text-primary);
+    }
+
+    /* Slash menu dark */
+    #milkdown-editor .milkdown .milkdown-slash-menu {
+      background: var(--bg-secondary) !important;
+      border: 1px solid var(--border) !important;
+    }
+    #milkdown-editor .milkdown .milkdown-slash-menu .menu-groups .menu-group li:hover {
+      background: var(--bg-hover) !important;
+    }
+
+    /* Toolbar surface dark */
+    #milkdown-editor .milkdown .milkdown-toolbar {
+      background: var(--bg-secondary) !important;
+      border: 1px solid var(--border);
+    }
+
+    /* Link tooltip / edit dark */
+    #milkdown-editor .milkdown .milkdown-link-preview > .link-preview,
+    #milkdown-editor .milkdown .milkdown-link-edit > .link-edit {
+      background: var(--bg-secondary) !important;
+      border: 1px solid var(--border);
+    }
+    #milkdown-editor .milkdown .milkdown-link-preview > .link-preview > a {
+      color: #93b5ff !important;
+    }
+    #milkdown-editor .milkdown .milkdown-link-edit > .link-edit > .input-area {
+      color: var(--text-primary) !important;
+    }
+    #milkdown-editor .milkdown .milkdown-link-preview > .link-preview > .button > svg,
+    #milkdown-editor .milkdown .milkdown-link-edit > .link-edit > .button > svg {
+      color: var(--text-secondary) !important;
+      fill: var(--text-secondary) !important;
+    }
+
+    /* Code block dark mode */
+    #milkdown-editor .milkdown .milkdown-code-block {
+      background: var(--bg-secondary) !important;
+      border: 1px solid var(--border);
+    }
+    #milkdown-editor .milkdown .milkdown-code-block .cm-editor {
+      background: transparent !important;
+    }
+    #milkdown-editor .milkdown .milkdown-code-block .cm-gutters {
+      background: transparent !important;
+      border-right: 1px solid var(--border) !important;
+      color: var(--text-muted) !important;
+    }
+    #milkdown-editor .milkdown .milkdown-code-block .language-picker {
+      color: var(--text-muted) !important;
+    }
+
+    /* Placeholder */
+    #milkdown-editor .milkdown .crepe-placeholder::before {
+      color: var(--text-muted) !important;
+    }
+
+    /* ─── LOADING ─── */
+    #loading {
+      position: fixed; inset: 0; background: var(--bg-primary);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      z-index: 8000; gap: 16px;
+    }
+    .spinner {
+      width: 36px; height: 36px;
+      border: 3px solid var(--border); border-top-color: var(--accent);
+      border-radius: 50%; animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #loading p { font-size: 0.85rem; color: var(--text-muted); }
+
+    /* ─── TOAST ─── */
+    #toast {
+      position: fixed; bottom: 60px; left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: rgba(0,0,0,0.85); color: #fff;
+      padding: 8px 20px; border-radius: 20px;
+      font-size: 0.82rem; opacity: 0; pointer-events: none;
+      transition: opacity 0.3s, transform 0.3s; z-index: 7000;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+
+<!-- Login -->
+<div id="login-screen">
+  <div class="login-box">
+    <h2>Markdown Editor</h2>
+    <p class="sub">비밀번호를 입력해주세요</p>
+    <label for="pw-input">비밀번호</label>
+    <input id="pw-input" type="password" placeholder="••••" autocomplete="current-password" />
+    <button id="login-btn">입장하기</button>
+    <div id="login-error"></div>
+  </div>
+</div>
+
+<!-- Loading -->
+<div id="loading" style="display:none;">
+  <div class="spinner"></div>
+  <p>에디터를 불러오는 중...</p>
+</div>
+
+<!-- App -->
+<div id="app">
+  <aside id="sidebar">
+    <div class="sidebar-header">
+      <h1><span class="logo">M</span> Markdown Editor</h1>
+      <button id="new-note-btn">+ 새 노트</button>
+    </div>
+    <div class="sidebar-search">
+      <div class="search-wrap">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input id="sidebar-search" type="text" placeholder="노트 검색..." autocomplete="off" />
+      </div>
+    </div>
+    <div id="note-list"></div>
+    <div class="sidebar-footer" id="note-count">0개의 노트</div>
+  </aside>
+
+  <div id="main">
+    <div id="title-bar" style="display:none;">
+      <input id="note-title" type="text" placeholder="제목을 입력하세요..." />
+    </div>
+    <div id="editor-wrap" style="display:none;">
+      <div id="milkdown-editor"></div>
+    </div>
+    <div id="empty-editor">
+      <div class="icon">M</div>
+      <p>노트를 선택하거나 새 노트를 만들어 시작하세요</p>
+    </div>
+    <div id="statusbar">
+      <span id="save-status"><span class="dot unsaved"></span> <span id="save-label">대기 중</span></span>
+      <span class="status-sep">|</span>
+      <span id="char-count">0자</span>
+      <span class="status-sep">|</span>
+      <span style="margin-left:auto;">Ctrl+S 저장 &middot; Ctrl+N 새 노트</span>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script type="module">
+import { Crepe, replaceAll } from './milkdown-crepe.bundle.js';
+
+// ─── CONFIG ───────────────────────────────────────────────
+const SUPABASE_URL = 'https://hkcbnibbguzbgqucnkzm.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_Kx0gAQwUHagHrNyFZo7xjg_7Y72LCFn';
+const TABLE = 'notes';
+
+// ─── AUTH ─────────────────────────────────────────────────
+function simpleHash(str) {
+  let h = 5381;
+  for (let i = 0; i < str.length; i++) { h = ((h << 5) + h) ^ str.charCodeAt(i); h = h >>> 0; }
+  return h.toString(16);
+}
+const CORRECT_HASH = simpleHash('1318');
+const SESSION_KEY = 'md_auth';
+
+const loginScreen = document.getElementById('login-screen');
+const pwInput     = document.getElementById('pw-input');
+const loginBtn    = document.getElementById('login-btn');
+const loginError  = document.getElementById('login-error');
+
+function isAuthed() { return sessionStorage.getItem(SESSION_KEY) === CORRECT_HASH; }
+
+function doLogin() {
+  if (simpleHash(pwInput.value) === CORRECT_HASH) {
+    sessionStorage.setItem(SESSION_KEY, CORRECT_HASH);
+    loginScreen.style.display = 'none';
+    initApp();
+  } else {
+    loginError.textContent = '비밀번호가 틀렸어요.';
+    pwInput.classList.add('error');
+    pwInput.value = '';
+    setTimeout(() => { pwInput.classList.remove('error'); loginError.textContent = ''; }, 1500);
+    pwInput.focus();
+  }
+}
+
+loginBtn.addEventListener('click', doLogin);
+pwInput.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+if (isAuthed()) loginScreen.style.display = 'none';
+
+// ─── SUPABASE ─────────────────────────────────────────────
+const headers = {
+  'apikey': SUPABASE_KEY,
+  'Authorization': `Bearer ${SUPABASE_KEY}`,
+  'Content-Type': 'application/json',
+  'Prefer': 'return=representation',
+};
+
+async function dbFetch(path, opts = {}) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { headers, ...opts });
+  if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
+  if (res.status === 204) return null;
+  return res.json();
+}
+
+async function loadNotes()         { return (await dbFetch(`${TABLE}?select=*&order=updated_at.desc`)) || []; }
+async function createNoteDB(data)  { const [r] = await dbFetch(TABLE, { method:'POST', body: JSON.stringify(data) }); return r; }
+async function patchNote(id, data) { const [r] = await dbFetch(`${TABLE}?id=eq.${id}`, { method:'PATCH', body: JSON.stringify(data) }); return r; }
+async function removeNoteDB(id)    { await dbFetch(`${TABLE}?id=eq.${id}`, { method:'DELETE' }); }
+
+// ─── STATE ────────────────────────────────────────────────
+let notes = [];
+let currentNoteId = null;
+let crepe = null;
+let searchQuery = '';
+let editorReady = false;
+
+// ─── DOM ──────────────────────────────────────────────────
+const app         = document.getElementById('app');
+const loading     = document.getElementById('loading');
+const noteList    = document.getElementById('note-list');
+const noteCountEl = document.getElementById('note-count');
+const titleBar    = document.getElementById('title-bar');
+const noteTitle   = document.getElementById('note-title');
+const editorWrap  = document.getElementById('editor-wrap');
+const emptyEditor = document.getElementById('empty-editor');
+const saveLabel   = document.getElementById('save-label');
+const charCountEl = document.getElementById('char-count');
+const toastEl     = document.getElementById('toast');
+
+let toastTimer;
+function showToast(msg) {
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2200);
+}
+
+function setSaveStatus(state) {
+  const dot = document.querySelector('#save-status .dot');
+  dot.className = 'dot';
+  if (state === 'saving')     { dot.classList.add('saving');  saveLabel.textContent = '저장 중...'; }
+  else if (state === 'saved') { dot.classList.add('saved');   saveLabel.textContent = '저장 완료'; }
+  else                        { dot.classList.add('unsaved'); saveLabel.textContent = '대기 중'; }
+}
+
+function getMarkdown() {
+  if (!crepe) return '';
+  try { return crepe.getMarkdown(); } catch { return ''; }
+}
+
+function updateCharCount() {
+  charCountEl.textContent = `${getMarkdown().length}자`;
+}
+
+// ─── SIDEBAR ──────────────────────────────────────────────
+function escHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+function formatDate(d) {
+  const now = new Date(), diff = now - d;
+  if (diff < 60000) return '방금 전';
+  if (diff < 3600000) return `${Math.floor(diff/60000)}분 전`;
+  if (diff < 86400000) return `${Math.floor(diff/3600000)}시간 전`;
+  return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+
+function renderNoteList() {
+  noteList.innerHTML = '';
+  const filtered = notes.filter(n =>
+    !searchQuery ||
+    n.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    n.content.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  filtered.forEach(n => {
+    const item = document.createElement('div');
+    item.className = 'note-item' + (n.id === currentNoteId ? ' active' : '');
+
+    const preview = (n.content || '').replace(/[#*`>_\-\[\]()!~|]/g, '').substring(0, 60);
+    const timeStr = formatDate(new Date(n.updated_at));
+
+    item.innerHTML = `
+      <div class="note-item-title">${escHtml(n.title || '제목 없음')}</div>
+      <div class="note-item-meta">${timeStr}</div>
+      <div class="note-item-preview">${escHtml(preview) || '내용 없음'}</div>
+      <button class="delete-btn" title="삭제">✕</button>
+    `;
+
+    item.addEventListener('click', e => {
+      if (e.target.closest('.delete-btn')) return;
+      selectNote(n.id);
+    });
+
+    item.querySelector('.delete-btn').addEventListener('click', e => {
+      e.stopPropagation();
+      removeNote(n.id);
+    });
+
+    noteList.appendChild(item);
+  });
+
+  noteCountEl.textContent = `${notes.length}개의 노트`;
+}
+
+// ─── EDITOR ───────────────────────────────────────────────
+async function initEditor() {
+  crepe = new Crepe({
+    root: document.getElementById('milkdown-editor'),
+    defaultValue: '',
+    featureConfigs: {
+      'code-mirror': { theme: 'dark' },
+    },
+  });
+
+  await crepe.create();
+  editorReady = true;
+
+  // Listen to changes
+  crepe.on((listener) => {
+    listener.markdownUpdated((_, md) => {
+      if (!currentNoteId) return;
+      const note = notes.find(n => n.id === currentNoteId);
+      if (note) note.content = md;
+      updateCharCount();
+      debounceSave();
+    });
+  });
+}
+
+// ─── AUTO SAVE ────────────────────────────────────────────
+let saveTimer = null;
+
+function debounceSave() {
+  setSaveStatus('unsaved');
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveCurrentNote, 1000);
+}
+
+async function saveCurrentNote() {
+  if (!currentNoteId) return;
+  const note = notes.find(n => n.id === currentNoteId);
+  if (!note) return;
+
+  setSaveStatus('saving');
+  try {
+    const updated = await patchNote(note.id, {
+      title: note.title,
+      content: note.content,
+      updated_at: new Date().toISOString(),
+    });
+    if (updated) note.updated_at = updated.updated_at;
+    setSaveStatus('saved');
+    renderNoteList();
+  } catch(e) {
+    console.error(e);
+    setSaveStatus('unsaved');
+    showToast('저장 오류: ' + e.message);
+  }
+}
+
+// ─── NOTE ACTIONS ─────────────────────────────────────────
+async function addNote() {
+  try {
+    const note = await createNoteDB({
+      title: '제목 없음',
+      content: '',
+      updated_at: new Date().toISOString(),
+    });
+    notes.unshift(note);
+    selectNote(note.id);
+    renderNoteList();
+    noteTitle.focus();
+    noteTitle.select();
+    showToast('새 노트가 생성됐어요!');
+  } catch(e) {
+    console.error(e);
+    showToast('오류: ' + e.message);
+  }
+}
+
+function selectNote(id) {
+  if (currentNoteId && saveTimer) {
+    clearTimeout(saveTimer);
+    saveCurrentNote();
+  }
+
+  currentNoteId = id;
+  const note = notes.find(n => n.id === id);
+  if (!note) return;
+
+  titleBar.style.display = 'flex';
+  editorWrap.style.display = 'flex';
+  emptyEditor.style.display = 'none';
+
+  noteTitle.value = note.title;
+
+  if (crepe && editorReady) {
+    crepe.editor.action(replaceAll(note.content || ''));
+  }
+
+  updateCharCount();
+  setSaveStatus('saved');
+  renderNoteList();
+}
+
+async function removeNote(id) {
+  if (!confirm('이 노트를 삭제할까요?')) return;
+  try {
+    await removeNoteDB(id);
+    notes = notes.filter(n => n.id !== id);
+
+    if (currentNoteId === id) {
+      currentNoteId = null;
+      titleBar.style.display = 'none';
+      editorWrap.style.display = 'none';
+      emptyEditor.style.display = 'flex';
+      if (crepe && editorReady) crepe.editor.action(replaceAll(''));
+      setSaveStatus('unsaved');
+    }
+
+    renderNoteList();
+    showToast('노트가 삭제됐어요.');
+  } catch(e) {
+    console.error(e);
+    showToast('삭제 오류: ' + e.message);
+  }
+}
+
+// ─── TITLE EDIT ───────────────────────────────────────────
+noteTitle.addEventListener('input', () => {
+  if (!currentNoteId) return;
+  const note = notes.find(n => n.id === currentNoteId);
+  if (note) note.title = noteTitle.value;
+  debounceSave();
+});
+
+// ─── SEARCH ───────────────────────────────────────────────
+document.getElementById('sidebar-search').addEventListener('input', e => {
+  searchQuery = e.target.value.trim();
+  renderNoteList();
+});
+
+// ─── BUTTONS ──────────────────────────────────────────────
+document.getElementById('new-note-btn').addEventListener('click', addNote);
+
+// ─── KEYBOARD ─────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'n') { e.preventDefault(); addNote(); }
+  if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); clearTimeout(saveTimer); saveCurrentNote(); }
+});
+
+// ─── INIT ─────────────────────────────────────────────────
+async function initApp() {
+  app.classList.add('active');
+  loading.style.display = 'flex';
+
+  try {
+    await initEditor();
+    notes = await loadNotes();
+    renderNoteList();
+    if (notes.length > 0) selectNote(notes[0].id);
+  } catch(e) {
+    console.error(e);
+    showToast('로딩 오류: ' + e.message);
+  } finally {
+    loading.style.display = 'none';
+  }
+}
+
+if (isAuthed()) {
+  initApp();
+} else {
+  loading.style.display = 'none';
+  pwInput.focus();
+}
+</script>
+</body>
+</html>
