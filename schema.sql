@@ -13,12 +13,26 @@ create table if not exists memos (
 );
 alter table memos disable row level security;
 
+-- ─── users 테이블 (회원 계정) ───
+create table if not exists users (
+  id            uuid        primary key default gen_random_uuid(),
+  email         text        not null unique,
+  nickname      text        not null,
+  password_hash text        not null,
+  created_at    timestamptz not null default now()
+);
+alter table users disable row level security;
+
 -- ─── notes 테이블 (마크다운 편집기) ───
 create table if not exists notes (
   id          uuid        primary key default gen_random_uuid(),
+  user_email  text        not null default '',
   title       text        not null default '제목 없음',
   content     text        not null default '',
   updated_at  timestamptz not null default now(),
   created_at  timestamptz not null default now()
 );
 alter table notes disable row level security;
+
+-- 기존 notes 테이블에 user_email 컬럼만 추가할 경우 (테이블이 이미 있을 때):
+-- alter table notes add column if not exists user_email text not null default '';
