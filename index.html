@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>타다닥 v1.3</title>
+  <title>코드 타다닥 (Markdown)</title>
   <link rel="stylesheet" href="milkdown-common.css" />
   <link rel="stylesheet" href="milkdown-frame-dark.css" />
   <style>
@@ -26,6 +26,22 @@
       --success: #7ccf7c;
       --danger: #e06060;
       --font: 'MonaS12', 'Segoe UI', sans-serif;
+    }
+
+    [data-theme="light"] {
+      --bg-primary: #F5F5F5;
+      --bg-secondary: #EAEAEA;
+      --bg-sidebar: #F0F0F0;
+      --bg-hover: #E0E0E0;
+      --bg-active: #D8D8D8;
+      --text-primary: #2D2D2D;
+      --text-secondary: #555555;
+      --text-muted: #888888;
+      --accent: #005FB8;
+      --accent-hover: #003D7A;
+      --border: #D0D0D0;
+      --success: #2E8B57;
+      --danger: #CC3333;
     }
 
     html, body {
@@ -77,6 +93,8 @@
       transition: background 0.15s;
     }
     #login-btn:hover { background: #e0e0e0; }
+    [data-theme="light"] #login-btn { background: #005FB8; color: #ffffff; }
+    [data-theme="light"] #login-btn:hover { background: #004A8F; }
     #login-error { margin-top: 10px; font-size: 0.78rem; color: var(--danger); text-align: center; min-height: 18px; }
 
     /* ─── LAYOUT ─── */
@@ -113,11 +131,18 @@
       margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
     }
     .sidebar-header h1 .logo {
-      width: 22px; height: 22px; border-radius: 5px;
-      background: #ffffff; color: #000000;
+      width: 24px; height: 24px;
       display: flex; align-items: center; justify-content: center;
-      font-size: 0.72rem; font-weight: 800;
+      flex-shrink: 0;
     }
+    .sidebar-header h1 .logo svg {
+      width: 24px; height: 24px;
+      color: var(--text-primary);
+    }
+    .sidebar-header h1 .logo .cat-filled { display: none; }
+    .sidebar-header h1 .logo .cat-outline { display: block; }
+    [data-theme="light"] .sidebar-header h1 .logo .cat-filled { display: block; }
+    [data-theme="light"] .sidebar-header h1 .logo .cat-outline { display: none; }
     .sidebar-actions { display: flex; gap: 6px; }
     #new-note-btn, #hashtag-btn {
       flex: 1; padding: 8px;
@@ -161,6 +186,7 @@
     }
     #hashtag-panel .tag-item:hover { background: var(--bg-active); color: var(--text-primary); }
     #hashtag-panel .tag-item.active { background: #ffffff; color: #000000; border-color: #ffffff; }
+    [data-theme="light"] #hashtag-panel .tag-item.active { background: #005FB8; color: #ffffff; border-color: #005FB8; }
     #hashtag-panel .tag-count { font-size: 0.65rem; opacity: 0.6; }
     #hashtag-panel .tag-clear {
       font-size: 0.7rem; color: var(--text-muted); cursor: pointer;
@@ -222,7 +248,21 @@
     }
     #sidebar-toggle:hover { background: var(--bg-hover); color: var(--text-primary); }
     #app.active ~ #sidebar-toggle { display: flex; }
-    #app.active:not(.sidebar-collapsed) ~ #sidebar-toggle { left: 252px; }
+    #app.active:not(.sidebar-collapsed) ~ #sidebar-toggle { left: 244px; }
+
+    /* ─── THEME TOGGLE ─── */
+    #theme-toggle {
+      position: fixed; top: 12px; right: 16px; z-index: 200;
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--bg-secondary); border: 1px solid var(--border);
+      color: var(--text-secondary); cursor: pointer;
+      display: none; align-items: center; justify-content: center;
+      font-size: 0.78rem; font-weight: 700; font-family: var(--font);
+      transition: all 0.2s;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    #theme-toggle:hover { background: var(--bg-hover); color: var(--text-primary); }
+    #app.active ~ #theme-toggle { display: flex; }
 
     /* ─── MAIN ─── */
     #main { display: flex; flex-direction: column; overflow: hidden; }
@@ -253,8 +293,13 @@
       width: 56px; height: 56px; border-radius: 14px;
       background: var(--bg-secondary); border: 1px solid var(--border);
       display: flex; align-items: center; justify-content: center;
-      font-size: 1.3rem; font-weight: 800; color: var(--text-primary);
+      color: var(--text-muted);
     }
+    #empty-editor .icon svg { width: 32px; height: 32px; }
+    #empty-editor .icon .cat-filled { display: none; }
+    #empty-editor .icon .cat-outline { display: block; }
+    [data-theme="light"] #empty-editor .icon .cat-filled { display: block; }
+    [data-theme="light"] #empty-editor .icon .cat-outline { display: none; }
     #empty-editor p { font-size: 0.9rem; }
 
     /* ─── STATUS BAR ─── */
@@ -288,6 +333,9 @@
       display: none;
     }
     #note-title { caret-color: #f0c040; }
+    [data-theme="light"] #milkdown-editor .cm-editor .cm-cursor { border-left-color: #005FB8 !important; }
+    [data-theme="light"] #custom-caret { background: #005FB8; }
+    [data-theme="light"] #note-title { caret-color: #005FB8; }
     #milkdown-editor .ProseMirror, #note-title { font-kerning: none; }
     #milkdown-editor::-webkit-scrollbar { width: 6px; }
     #milkdown-editor::-webkit-scrollbar-track { background: transparent; }
@@ -355,13 +403,17 @@
       font-size: 0.88em; padding: 2px 6px; border-radius: 4px;
       background: rgba(255,255,255,0.06); color: #d0d0d0;
     }
+    [data-theme="light"] #milkdown-editor .milkdown .ProseMirror code {
+      background: rgba(0,0,0,0.06); color: #c7254e;
+    }
     #milkdown-editor .milkdown .ProseMirror a {
       color: #b0b0b0; text-decoration: underline;
       text-decoration-color: rgba(176,176,176,0.3); text-underline-offset: 3px;
     }
     #milkdown-editor .milkdown .ProseMirror a:hover { color: #ffffff; text-decoration-color: rgba(255,255,255,0.5); }
+    [data-theme="light"] #milkdown-editor .milkdown .ProseMirror a { color: #005FB8; text-decoration-color: rgba(0,95,184,0.3); }
+    [data-theme="light"] #milkdown-editor .milkdown .ProseMirror a:hover { color: #003D7A; text-decoration-color: rgba(0,61,122,0.5); }
     #milkdown-editor .milkdown .ProseMirror hr { margin: 24px 0; border: none; height: 1px; background: var(--border); }
-    #milkdown-editor .milkdown .ProseMirror ul,
     #milkdown-editor .milkdown .ProseMirror ol { padding-left: 24px; }
     #milkdown-editor .milkdown .ProseMirror li { margin-bottom: 4px; }
     #milkdown-editor .milkdown .ProseMirror li p { padding: 1px 0; }
@@ -376,6 +428,7 @@
     #milkdown-editor .milkdown .milkdown-list-item-block li .label-wrapper .unchecked svg { fill: var(--text-muted) !important; opacity: 0.8; }
     #milkdown-editor .milkdown .milkdown-list-item-block li .label-wrapper .unchecked:hover svg { fill: var(--text-primary) !important; opacity: 1; }
     #milkdown-editor .milkdown .milkdown-list-item-block li .label-wrapper .checked svg { fill: #ffffff !important; opacity: 1; }
+    [data-theme="light"] #milkdown-editor .milkdown .milkdown-list-item-block li .label-wrapper .checked svg { fill: #005FB8 !important; }
 
     /* checked task-list strikethrough */
     #milkdown-editor .milkdown .milkdown-list-item-block[data-checked="true"] > .list-item > .children { text-decoration: line-through; text-decoration-color: var(--text-muted); color: var(--text-muted); }
@@ -388,6 +441,10 @@
       background: #ffffff;
       color: #000000;
     }
+    [data-theme="light"] ::highlight(editor-hashtag) {
+      background: #000000;
+      color: #ffffff;
+    }
 
     /* ─── TEXT SELECTION ─── */
     #milkdown-editor .ProseMirror ::selection {
@@ -398,6 +455,14 @@
       background: #ffffff !important;
       color: #000000 !important;
     }
+    [data-theme="light"] #milkdown-editor .ProseMirror ::selection {
+      background: #005FB8 !important;
+      color: #ffffff !important;
+    }
+    [data-theme="light"] #milkdown-editor .ProseMirror::selection {
+      background: #005FB8 !important;
+      color: #ffffff !important;
+    }
     ::highlight(editor-hashtag)::selection {
       background: #000000 !important;
       color: #ffffff !important;
@@ -407,17 +472,26 @@
     #milkdown-editor .milkdown .milkdown-toolbar .toolbar-item svg { color: var(--text-secondary) !important; fill: var(--text-secondary) !important; }
     #milkdown-editor .milkdown .milkdown-toolbar .toolbar-item:hover svg { color: var(--text-primary) !important; fill: var(--text-primary) !important; }
     #milkdown-editor .milkdown .milkdown-toolbar .toolbar-item.active svg { color: #ffffff !important; fill: #ffffff !important; }
-    #milkdown-editor .milkdown .milkdown-block-handle .operation-item svg { fill: var(--text-muted) !important; }
-    #milkdown-editor .milkdown .milkdown-block-handle .operation-item:hover svg { fill: var(--text-primary) !important; }
+    [data-theme="light"] #milkdown-editor .milkdown .milkdown-toolbar .toolbar-item.active svg { color: #005FB8 !important; fill: #005FB8 !important; }
+    #milkdown-editor .milkdown .milkdown-block-handle { display: none !important; }
     #milkdown-editor .milkdown .ProseMirror table { border-collapse: collapse; }
     #milkdown-editor .milkdown .ProseMirror th, #milkdown-editor .milkdown .ProseMirror td { border: 1px solid var(--border); padding: 8px 12px; }
     #milkdown-editor .milkdown .ProseMirror th { background: var(--bg-secondary); font-weight: 700; }
-    #milkdown-editor .milkdown .milkdown-slash-menu { background: var(--bg-secondary) !important; border: 1px solid var(--border) !important; }
+    #milkdown-editor .milkdown .milkdown-slash-menu { background: var(--bg-secondary) !important; border: 1px solid var(--border) !important; border-radius: 8px !important; }
+    #milkdown-editor .milkdown .milkdown-slash-menu .tab-group ul li { font-size: 12px !important; padding: 4px 8px !important; line-height: 16px !important; }
+    #milkdown-editor .milkdown .milkdown-slash-menu .tab-group { padding: 6px 8px 0 !important; }
+    #milkdown-editor .milkdown .milkdown-slash-menu .tab-group ul { padding: 4px 6px !important; gap: 6px !important; }
+    #milkdown-editor .milkdown .milkdown-slash-menu .menu-groups { max-height: 280px !important; padding: 0 8px 8px !important; }
+    #milkdown-editor .milkdown .milkdown-slash-menu .menu-groups .menu-group h6 { font-size: 11px !important; padding: 8px 8px !important; }
+    #milkdown-editor .milkdown .milkdown-slash-menu .menu-groups .menu-group li { min-width: 160px !important; padding: 8px 8px !important; gap: 10px !important; }
+    #milkdown-editor .milkdown .milkdown-slash-menu .menu-groups .menu-group li > span { font-size: 12px !important; }
+    #milkdown-editor .milkdown .milkdown-slash-menu .menu-groups .menu-group li svg { width: 18px !important; height: 18px !important; }
     #milkdown-editor .milkdown .milkdown-slash-menu .menu-groups .menu-group li:hover { background: var(--bg-hover) !important; }
     #milkdown-editor .milkdown .milkdown-toolbar { background: var(--bg-secondary) !important; border: 1px solid var(--border); }
     #milkdown-editor .milkdown .milkdown-link-preview > .link-preview,
     #milkdown-editor .milkdown .milkdown-link-edit > .link-edit { background: var(--bg-secondary) !important; border: 1px solid var(--border); }
     #milkdown-editor .milkdown .milkdown-link-preview > .link-preview > a { color: #b0b0b0 !important; }
+    [data-theme="light"] #milkdown-editor .milkdown .milkdown-link-preview > .link-preview > a { color: #005FB8 !important; }
     #milkdown-editor .milkdown .milkdown-link-edit > .link-edit > .input-area { color: var(--text-primary) !important; }
     #milkdown-editor .milkdown .milkdown-link-preview > .link-preview > .button > svg,
     #milkdown-editor .milkdown .milkdown-link-edit > .link-edit > .button > svg { color: var(--text-secondary) !important; fill: var(--text-secondary) !important; }
@@ -425,6 +499,7 @@
     #milkdown-editor .milkdown .milkdown-code-block .cm-editor { background: transparent !important; }
     #milkdown-editor .milkdown .milkdown-code-block .cm-gutters { background: transparent !important; border-right: 1px solid var(--border) !important; color: var(--text-muted) !important; }
     #milkdown-editor .milkdown .milkdown-code-block .language-picker { color: var(--text-muted) !important; }
+    [data-theme="light"] #milkdown-editor .milkdown .milkdown-code-block { background: #E8E8E8 !important; border: 1px solid var(--border); }
     #milkdown-editor .milkdown .crepe-placeholder::before { color: var(--text-muted) !important; }
 
     /* ─── LOADING ─── */
@@ -435,6 +510,7 @@
       z-index: 8000; gap: 16px;
     }
     .spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: #ffffff; border-radius: 50%; animation: spin 0.7s linear infinite; }
+    [data-theme="light"] .spinner { border-top-color: #005FB8; }
     @keyframes spin { to { transform: rotate(360deg); } }
     #loading p { font-size: 0.85rem; color: var(--text-muted); }
 
@@ -448,6 +524,9 @@
       transition: opacity 0.3s, transform 0.3s; z-index: 7000;
       font-family: var(--font);
     }
+    [data-theme="light"] #toast {
+      background: rgba(0,0,0,0.85); color: #fff;
+    }
     #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   </style>
 </head>
@@ -456,9 +535,8 @@
 <!-- Login -->
 <div id="login-screen">
   <div class="login-box">
-    <h2>타다닥 v1.3</h2>
-    <p style="font-size:0.68rem;color:#555;text-align:center;margin-bottom:2px;">made in ksthink@ksthink.com</p>
-    <p class="sub">비밀번호를 입력해주세요</p>
+    <h2>코드 타다닥 (Markdown)</h2>
+    <p style="font-size:0.68rem;color:#555;text-align:center;margin-bottom:2px;">제작자 : 송죽동길냥이(@ksthink)</p>
     <label for="pw-input">비밀번호</label>
     <input id="pw-input" type="password" placeholder="••••" autocomplete="current-password" />
     <button id="login-btn">입장하기</button>
@@ -476,8 +554,8 @@
 <div id="app">
   <aside id="sidebar">
     <div class="sidebar-header">
-      <h1><span class="logo">T</span> 타다닥 v1.3</h1>
-      <p style="font-size:0.62rem;color:var(--text-muted);margin:-8px 0 4px 30px;">made in ksthink@ksthink.com</p>
+      <h1><span class="logo"><svg class="cat-outline" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M19.9801 9.0625L20.7301 9.06545V9.0625H19.9801ZM4.01995 9.0625H3.26994L3.26995 9.06545L4.01995 9.0625ZM19.0993 10.6602L18.5268 11.1447L18.6114 11.2447L18.725 11.3101L19.0993 10.6602ZM18.8279 9.39546C18.494 9.15031 18.0246 9.22224 17.7795 9.55611C17.5343 9.88999 17.6063 10.3594 17.9401 10.6045L18.8279 9.39546ZM4.01994 15L3.26994 15V15H4.01994ZM6.05987 10.6045C6.39375 10.3594 6.46568 9.88999 6.22053 9.55612C5.97538 9.22224 5.50598 9.15031 5.1721 9.39546L6.05987 10.6045ZM12 5.65636C11.2279 5.65636 10.7904 5.69743 10.4437 5.74003C10.1041 5.78176 9.93161 5.8125 9.60601 5.8125V7.3125C10.0465 7.3125 10.3308 7.26518 10.6266 7.22883C10.9153 7.19336 11.2918 7.15636 12 7.15636V5.65636ZM12 7.15636C12.7083 7.15636 13.0847 7.19336 13.3734 7.22883C13.6692 7.26518 13.9536 7.3125 14.394 7.3125V5.8125C14.0684 5.8125 13.896 5.78176 13.5563 5.74003C13.2097 5.69743 12.7721 5.65636 12 5.65636V7.15636ZM14.394 7.3125C14.6069 7.3125 14.8057 7.25192 14.9494 7.19867C15.1051 7.14099 15.2662 7.06473 15.4208 6.98509C15.7257 6.82803 16.0797 6.61814 16.4042 6.43125C16.7431 6.23612 17.064 6.0575 17.3512 5.92771C17.6589 5.78868 17.8349 5.75011 17.9053 5.75011V4.25011C17.4968 4.25011 17.0743 4.40685 16.7336 4.56076C16.3725 4.72392 15.9951 4.9359 15.6557 5.13136C15.3019 5.33508 14.9976 5.51578 14.7338 5.65167C14.6041 5.7185 14.5034 5.7643 14.4284 5.79206C14.3415 5.82426 14.3408 5.8125 14.394 5.8125V7.3125ZM17.9053 5.75011C18.2495 5.75011 18.58 5.85266 18.8122 6.0527C19.0237 6.23486 19.2301 6.56231 19.2301 7.18761H20.7301C20.7301 6.18792 20.3778 5.42162 19.7913 4.91628C19.2255 4.42882 18.5186 4.25011 17.9053 4.25011V5.75011ZM19.2301 7.18761V9.0625H20.7301V7.18761H19.2301ZM9.60601 5.8125C9.65925 5.8125 9.65855 5.82426 9.57164 5.79206C9.49668 5.7643 9.39595 5.71849 9.26624 5.65166C9.00249 5.51576 8.69813 5.33504 8.34437 5.13132C8.00493 4.93584 7.62754 4.72384 7.26643 4.56067C6.92577 4.40675 6.5032 4.25 6.09476 4.25V5.75C6.16512 5.75 6.34105 5.78856 6.64878 5.92761C6.93605 6.05741 7.25693 6.23603 7.5958 6.43118C7.92035 6.61808 8.27434 6.82799 8.57919 6.98506C8.73377 7.06471 8.89488 7.14098 9.05059 7.19866C9.19436 7.25191 9.39317 7.3125 9.60601 7.3125V5.8125ZM6.09476 4.25C5.48139 4.25 4.77453 4.42871 4.20872 4.91616C3.62216 5.4215 3.26995 6.18781 3.26995 7.1875H4.76995C4.76995 6.56219 4.97634 6.23475 5.18778 6.05259C5.41998 5.85254 5.75053 5.75 6.09476 5.75V4.25ZM3.26995 7.1875V9.0625H4.76995V7.1875H3.26995ZM12 20.75C13.431 20.75 15.5401 20.4654 17.3209 19.6462C19.1035 18.8262 20.7301 17.3734 20.7301 15H19.2301C19.2301 16.5328 18.2232 17.58 16.694 18.2835C15.1631 18.9877 13.2822 19.25 12 19.25V20.75ZM19.6719 10.1758C19.437 9.89818 19.1575 9.63749 18.8279 9.39546L17.9401 10.6045C18.1808 10.7813 18.3726 10.9625 18.5268 11.1447L19.6719 10.1758ZM19.2301 9.05955C19.2293 9.25778 19.1888 9.67007 19.0916 9.95501C19.0374 10.1139 19.0062 10.1101 19.0627 10.0649C19.1075 10.0289 19.1902 9.98403 19.3002 9.97847C19.4051 9.97317 19.468 10.007 19.4737 10.0103L18.725 11.3101C18.9057 11.4142 19.1272 11.4891 19.3759 11.4766C19.6297 11.4637 19.8412 11.3633 20.0013 11.2349C20.2881 11.0048 20.4331 10.6686 20.5113 10.4392C20.679 9.94758 20.7289 9.35941 20.7301 9.06545L19.2301 9.05955ZM12 19.25C10.7178 19.25 8.83685 18.9877 7.30594 18.2835C5.7768 17.5801 4.76994 16.5328 4.76994 15H3.26994C3.26994 17.3734 4.89649 18.8262 6.67907 19.6462C8.45988 20.4654 10.5689 20.75 12 20.75V19.25ZM4.76994 15C4.76994 14.2119 4.71349 13.5629 4.7889 12.8724C4.85939 12.227 5.04214 11.6541 5.47321 11.1447L4.32811 10.1758C3.64728 10.9804 3.38966 11.8682 3.29777 12.7095C3.2108 13.5058 3.26994 14.3696 3.26994 15L4.76994 15ZM5.47321 11.1447C5.62738 10.9625 5.81916 10.7813 6.05987 10.6045L5.1721 9.39546C4.84248 9.63749 4.56299 9.89818 4.32811 10.1758L5.47321 11.1447ZM3.26995 9.06545C3.27111 9.35941 3.32101 9.94757 3.48871 10.4392C3.56694 10.6686 3.71186 11.0048 3.99873 11.2349C4.15878 11.3633 4.3703 11.4637 4.62412 11.4766C4.87277 11.4891 5.0943 11.4142 5.27501 11.3101L4.52631 10.0103C4.53204 10.007 4.59487 9.97317 4.69976 9.97847C4.80981 9.98403 4.89252 10.0289 4.93734 10.0649C4.99376 10.1101 4.96261 10.1139 4.9084 9.95501C4.81121 9.67007 4.77072 9.25778 4.76994 9.05955L3.26995 9.06545Z" fill="currentColor"/><path d="M12.826 16C12.826 16.1726 12.465 16.3125 12.0196 16.3125C11.5742 16.3125 11.2131 16.1726 11.2131 16C11.2131 15.8274 11.5742 15.6875 12.0196 15.6875C12.465 15.6875 12.826 15.8274 12.826 16Z" stroke="currentColor" stroke-width="1.5"/><path d="M15.5 13.5938C15.5 14.0252 15.2834 14.375 15.0161 14.375C14.7489 14.375 14.5323 14.0252 14.5323 13.5938C14.5323 13.1623 14.7489 12.8125 15.0161 12.8125C15.2834 12.8125 15.5 13.1623 15.5 13.5938Z" stroke="currentColor" stroke-width="1.5"/><path d="M9.5 13.5938C9.5 14.0252 9.28336 14.375 9.01613 14.375C8.74889 14.375 8.53226 14.0252 8.53226 13.5938C8.53226 13.1623 8.74889 12.8125 9.01613 12.8125C9.28336 12.8125 9.5 13.1623 9.5 13.5938Z" stroke="currentColor" stroke-width="1.5"/><path d="M22.0004 15.4688C21.5165 15.1562 19.4197 14.375 18.6133 14.375" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M20.3871 17.9688C19.9033 17.6562 18.7742 16.875 17.9678 16.875" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M2 15.4688C2.48387 15.1562 4.58065 14.375 5.3871 14.375" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M3.61279 17.9688C4.09667 17.6562 5.2257 16.875 6.03215 16.875" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><svg class="cat-filled" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M11.7501 6.40636C10.2698 6.40636 10.1222 6.5625 9.3561 6.5625C8.71769 6.5625 6.80245 5 5.84485 5C4.88724 5 3.77004 5.5625 3.77004 7.1875V9.0625C3.77197 9.55469 3.95081 11.0634 4.65075 10.6602C3.82323 11.6382 3.73963 12.7786 3.751 13.8826C3.52812 13.947 3.30072 14.0196 3.08003 14.095C2.39614 14.3289 1.67085 14.6271 1.3432 14.8387C0.995241 15.0634 0.895339 15.5277 1.12006 15.8756C1.34478 16.2236 1.80903 16.3235 2.15698 16.0988C2.3132 15.9979 2.87823 15.7493 3.56532 15.5144C3.64124 15.4884 3.71731 15.4631 3.79298 15.4386C3.83925 15.8724 3.95408 16.2684 4.12478 16.6292L4.1012 16.6416C3.69148 16.8581 3.3113 17.1067 3.06889 17.2652C3.02694 17.2926 2.98912 17.3173 2.95599 17.3387C2.60803 17.5634 2.50813 18.0277 2.73285 18.3756C2.95757 18.7236 3.42182 18.8235 3.76978 18.5988C3.8109 18.5722 3.85472 18.5436 3.90097 18.5134C4.1463 18.3533 4.45999 18.1485 4.80199 17.9678C4.88218 17.9254 4.95935 17.887 5.03317 17.8524C6.76347 19.4748 9.86991 20 11.7501 20C13.6302 20 16.7367 19.4748 18.467 17.8524C18.5408 17.887 18.6179 17.9254 18.6981 17.9678C19.0401 18.1485 19.3538 18.3533 19.5991 18.5134C19.6454 18.5436 19.6892 18.5722 19.7303 18.5988C20.0783 18.8235 20.5425 18.7236 20.7673 18.3756C20.992 18.0277 20.8921 17.5634 20.5441 17.3387C20.511 17.3173 20.4732 17.2926 20.4312 17.2652C20.1888 17.1067 19.8086 16.8581 19.3989 16.6416L19.3754 16.6292C19.5461 16.2683 19.6609 15.8724 19.7072 15.4385C19.783 15.463 19.8592 15.4883 19.9352 15.5144C20.6223 15.7493 21.1874 15.9979 21.3436 16.0988C21.6915 16.3235 22.1558 16.2236 22.3805 15.8756C22.6052 15.5277 22.5053 15.0634 22.1574 14.8387C21.8297 14.6271 21.1044 14.3289 20.4205 14.095C20.1997 14.0195 19.9722 13.947 19.7492 13.8825C19.7605 12.7785 19.6769 11.6382 18.8494 10.6602C19.5494 11.0634 19.7282 9.55469 19.7302 9.0625V7.18761C19.7302 5.56261 18.6129 5.00011 17.6553 5.00011C16.6977 5.00011 14.7825 6.5625 14.1441 6.5625C13.378 6.5625 13.2305 6.40636 11.7501 6.40636ZM11.0745 15.6004C11.2771 15.5314 11.5162 15.5 11.7501 15.5C11.984 15.5 12.2231 15.5314 12.4257 15.6004C12.5251 15.6342 12.6467 15.6876 12.7537 15.7738C12.8612 15.8603 13.0001 16.0206 13.0001 16.25C13.0001 16.4794 12.8612 16.6397 12.7537 16.7262C12.6467 16.8124 12.5251 16.8658 12.4257 16.8996C12.2231 16.9686 11.984 17 11.7501 17C11.5162 17 11.2771 16.9686 11.0745 16.8996C10.9751 16.8658 10.8535 16.8124 10.7464 16.7262C10.6389 16.6397 10.5001 16.4794 10.5001 16.25C10.5001 16.0206 10.6389 15.8603 10.7464 15.7738C10.8535 15.6876 10.9751 15.6342 11.0745 15.6004ZM13.9201 12.5005C14.0566 12.2721 14.326 12 14.7301 12C15.1342 12 15.4036 12.2721 15.54 12.5005C15.6823 12.7387 15.7501 13.0274 15.7501 13.3125C15.7501 13.5976 15.6823 13.8863 15.54 14.1245C15.4036 14.3529 15.1342 14.625 14.7301 14.625C14.326 14.625 14.0566 14.3529 13.9201 14.1245C13.7778 13.8863 13.7101 13.5976 13.7101 13.3125C13.7101 13.0274 13.7778 12.7387 13.9201 12.5005ZM7.96016 12.5005C8.09658 12.2721 8.36599 12 8.7701 12C9.17421 12 9.44362 12.2721 9.58004 12.5005C9.72234 12.7387 9.79011 13.0274 9.79011 13.3125C9.79011 13.5976 9.72234 13.8863 9.58004 14.1245C9.44362 14.3529 9.17421 14.625 8.7701 14.625C8.36599 14.625 8.09658 14.3529 7.96016 14.1245C7.81786 13.8863 7.75009 13.5976 7.75009 13.3125C7.75009 13.0274 7.81786 12.7387 7.96016 12.5005Z" fill="currentColor"/></svg></span> 코드 타다닥 (Markdown)</h1>
+      <p style="font-size:0.62rem;color:var(--text-muted);margin:-8px 0 4px 30px;">제작자 : 송죽동길냥이(@ksthink)</p>
       <div class="sidebar-actions">
         <button id="new-note-btn">+ 새 노트</button>
         <button id="hashtag-btn" title="해시태그 모아보기">#</button>
@@ -508,7 +586,7 @@
       <div id="custom-caret"></div>
     </div>
     <div id="empty-editor">
-      <div class="icon">N</div>
+      <div class="icon"><svg class="cat-outline" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M19.9801 9.0625L20.7301 9.06545V9.0625H19.9801ZM4.01995 9.0625H3.26994L3.26995 9.06545L4.01995 9.0625ZM19.0993 10.6602L18.5268 11.1447L18.6114 11.2447L18.725 11.3101L19.0993 10.6602ZM18.8279 9.39546C18.494 9.15031 18.0246 9.22224 17.7795 9.55611C17.5343 9.88999 17.6063 10.3594 17.9401 10.6045L18.8279 9.39546ZM4.01994 15L3.26994 15V15H4.01994ZM6.05987 10.6045C6.39375 10.3594 6.46568 9.88999 6.22053 9.55612C5.97538 9.22224 5.50598 9.15031 5.1721 9.39546L6.05987 10.6045ZM12 5.65636C11.2279 5.65636 10.7904 5.69743 10.4437 5.74003C10.1041 5.78176 9.93161 5.8125 9.60601 5.8125V7.3125C10.0465 7.3125 10.3308 7.26518 10.6266 7.22883C10.9153 7.19336 11.2918 7.15636 12 7.15636V5.65636ZM12 7.15636C12.7083 7.15636 13.0847 7.19336 13.3734 7.22883C13.6692 7.26518 13.9536 7.3125 14.394 7.3125V5.8125C14.0684 5.8125 13.896 5.78176 13.5563 5.74003C13.2097 5.69743 12.7721 5.65636 12 5.65636V7.15636ZM14.394 7.3125C14.6069 7.3125 14.8057 7.25192 14.9494 7.19867C15.1051 7.14099 15.2662 7.06473 15.4208 6.98509C15.7257 6.82803 16.0797 6.61814 16.4042 6.43125C16.7431 6.23612 17.064 6.0575 17.3512 5.92771C17.6589 5.78868 17.8349 5.75011 17.9053 5.75011V4.25011C17.4968 4.25011 17.0743 4.40685 16.7336 4.56076C16.3725 4.72392 15.9951 4.9359 15.6557 5.13136C15.3019 5.33508 14.9976 5.51578 14.7338 5.65167C14.6041 5.7185 14.5034 5.7643 14.4284 5.79206C14.3415 5.82426 14.3408 5.8125 14.394 5.8125V7.3125ZM17.9053 5.75011C18.2495 5.75011 18.58 5.85266 18.8122 6.0527C19.0237 6.23486 19.2301 6.56231 19.2301 7.18761H20.7301C20.7301 6.18792 20.3778 5.42162 19.7913 4.91628C19.2255 4.42882 18.5186 4.25011 17.9053 4.25011V5.75011ZM19.2301 7.18761V9.0625H20.7301V7.18761H19.2301ZM9.60601 5.8125C9.65925 5.8125 9.65855 5.82426 9.57164 5.79206C9.49668 5.7643 9.39595 5.71849 9.26624 5.65166C9.00249 5.51576 8.69813 5.33504 8.34437 5.13132C8.00493 4.93584 7.62754 4.72384 7.26643 4.56067C6.92577 4.40675 6.5032 4.25 6.09476 4.25V5.75C6.16512 5.75 6.34105 5.78856 6.64878 5.92761C6.93605 6.05741 7.25693 6.23603 7.5958 6.43118C7.92035 6.61808 8.27434 6.82799 8.57919 6.98506C8.73377 7.06471 8.89488 7.14098 9.05059 7.19866C9.19436 7.25191 9.39317 7.3125 9.60601 7.3125V5.8125ZM6.09476 4.25C5.48139 4.25 4.77453 4.42871 4.20872 4.91616C3.62216 5.4215 3.26995 6.18781 3.26995 7.1875H4.76995C4.76995 6.56219 4.97634 6.23475 5.18778 6.05259C5.41998 5.85254 5.75053 5.75 6.09476 5.75V4.25ZM3.26995 7.1875V9.0625H4.76995V7.1875H3.26995ZM12 20.75C13.431 20.75 15.5401 20.4654 17.3209 19.6462C19.1035 18.8262 20.7301 17.3734 20.7301 15H19.2301C19.2301 16.5328 18.2232 17.58 16.694 18.2835C15.1631 18.9877 13.2822 19.25 12 19.25V20.75ZM19.6719 10.1758C19.437 9.89818 19.1575 9.63749 18.8279 9.39546L17.9401 10.6045C18.1808 10.7813 18.3726 10.9625 18.5268 11.1447L19.6719 10.1758ZM19.2301 9.05955C19.2293 9.25778 19.1888 9.67007 19.0916 9.95501C19.0374 10.1139 19.0062 10.1101 19.0627 10.0649C19.1075 10.0289 19.1902 9.98403 19.3002 9.97847C19.4051 9.97317 19.468 10.007 19.4737 10.0103L18.725 11.3101C18.9057 11.4142 19.1272 11.4891 19.3759 11.4766C19.6297 11.4637 19.8412 11.3633 20.0013 11.2349C20.2881 11.0048 20.4331 10.6686 20.5113 10.4392C20.679 9.94758 20.7289 9.35941 20.7301 9.06545L19.2301 9.05955ZM12 19.25C10.7178 19.25 8.83685 18.9877 7.30594 18.2835C5.7768 17.5801 4.76994 16.5328 4.76994 15H3.26994C3.26994 17.3734 4.89649 18.8262 6.67907 19.6462C8.45988 20.4654 10.5689 20.75 12 20.75V19.25ZM4.76994 15C4.76994 14.2119 4.71349 13.5629 4.7889 12.8724C4.85939 12.227 5.04214 11.6541 5.47321 11.1447L4.32811 10.1758C3.64728 10.9804 3.38966 11.8682 3.29777 12.7095C3.2108 13.5058 3.26994 14.3696 3.26994 15L4.76994 15ZM5.47321 11.1447C5.62738 10.9625 5.81916 10.7813 6.05987 10.6045L5.1721 9.39546C4.84248 9.63749 4.56299 9.89818 4.32811 10.1758L5.47321 11.1447ZM3.26995 9.06545C3.27111 9.35941 3.32101 9.94757 3.48871 10.4392C3.56694 10.6686 3.71186 11.0048 3.99873 11.2349C4.15878 11.3633 4.3703 11.4637 4.62412 11.4766C4.87277 11.4891 5.0943 11.4142 5.27501 11.3101L4.52631 10.0103C4.53204 10.007 4.59487 9.97317 4.69976 9.97847C4.80981 9.98403 4.89252 10.0289 4.93734 10.0649C4.99376 10.1101 4.96261 10.1139 4.9084 9.95501C4.81121 9.67007 4.77072 9.25778 4.76994 9.05955L3.26995 9.06545Z" fill="currentColor"/><path d="M12.826 16C12.826 16.1726 12.465 16.3125 12.0196 16.3125C11.5742 16.3125 11.2131 16.1726 11.2131 16C11.2131 15.8274 11.5742 15.6875 12.0196 15.6875C12.465 15.6875 12.826 15.8274 12.826 16Z" stroke="currentColor" stroke-width="1.5"/><path d="M15.5 13.5938C15.5 14.0252 15.2834 14.375 15.0161 14.375C14.7489 14.375 14.5323 14.0252 14.5323 13.5938C14.5323 13.1623 14.7489 12.8125 15.0161 12.8125C15.2834 12.8125 15.5 13.1623 15.5 13.5938Z" stroke="currentColor" stroke-width="1.5"/><path d="M9.5 13.5938C9.5 14.0252 9.28336 14.375 9.01613 14.375C8.74889 14.375 8.53226 14.0252 8.53226 13.5938C8.53226 13.1623 8.74889 12.8125 9.01613 12.8125C9.28336 12.8125 9.5 13.1623 9.5 13.5938Z" stroke="currentColor" stroke-width="1.5"/><path d="M22.0004 15.4688C21.5165 15.1562 19.4197 14.375 18.6133 14.375" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M20.3871 17.9688C19.9033 17.6562 18.7742 16.875 17.9678 16.875" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M2 15.4688C2.48387 15.1562 4.58065 14.375 5.3871 14.375" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M3.61279 17.9688C4.09667 17.6562 5.2257 16.875 6.03215 16.875" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><svg class="cat-filled" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M11.7501 6.40636C10.2698 6.40636 10.1222 6.5625 9.3561 6.5625C8.71769 6.5625 6.80245 5 5.84485 5C4.88724 5 3.77004 5.5625 3.77004 7.1875V9.0625C3.77197 9.55469 3.95081 11.0634 4.65075 10.6602C3.82323 11.6382 3.73963 12.7786 3.751 13.8826C3.52812 13.947 3.30072 14.0196 3.08003 14.095C2.39614 14.3289 1.67085 14.6271 1.3432 14.8387C0.995241 15.0634 0.895339 15.5277 1.12006 15.8756C1.34478 16.2236 1.80903 16.3235 2.15698 16.0988C2.3132 15.9979 2.87823 15.7493 3.56532 15.5144C3.64124 15.4884 3.71731 15.4631 3.79298 15.4386C3.83925 15.8724 3.95408 16.2684 4.12478 16.6292L4.1012 16.6416C3.69148 16.8581 3.3113 17.1067 3.06889 17.2652C3.02694 17.2926 2.98912 17.3173 2.95599 17.3387C2.60803 17.5634 2.50813 18.0277 2.73285 18.3756C2.95757 18.7236 3.42182 18.8235 3.76978 18.5988C3.8109 18.5722 3.85472 18.5436 3.90097 18.5134C4.1463 18.3533 4.45999 18.1485 4.80199 17.9678C4.88218 17.9254 4.95935 17.887 5.03317 17.8524C6.76347 19.4748 9.86991 20 11.7501 20C13.6302 20 16.7367 19.4748 18.467 17.8524C18.5408 17.887 18.6179 17.9254 18.6981 17.9678C19.0401 18.1485 19.3538 18.3533 19.5991 18.5134C19.6454 18.5436 19.6892 18.5722 19.7303 18.5988C20.0783 18.8235 20.5425 18.7236 20.7673 18.3756C20.992 18.0277 20.8921 17.5634 20.5441 17.3387C20.511 17.3173 20.4732 17.2926 20.4312 17.2652C20.1888 17.1067 19.8086 16.8581 19.3989 16.6416L19.3754 16.6292C19.5461 16.2683 19.6609 15.8724 19.7072 15.4385C19.783 15.463 19.8592 15.4883 19.9352 15.5144C20.6223 15.7493 21.1874 15.9979 21.3436 16.0988C21.6915 16.3235 22.1558 16.2236 22.3805 15.8756C22.6052 15.5277 22.5053 15.0634 22.1574 14.8387C21.8297 14.6271 21.1044 14.3289 20.4205 14.095C20.1997 14.0195 19.9722 13.947 19.7492 13.8825C19.7605 12.7785 19.6769 11.6382 18.8494 10.6602C19.5494 11.0634 19.7282 9.55469 19.7302 9.0625V7.18761C19.7302 5.56261 18.6129 5.00011 17.6553 5.00011C16.6977 5.00011 14.7825 6.5625 14.1441 6.5625C13.378 6.5625 13.2305 6.40636 11.7501 6.40636ZM11.0745 15.6004C11.2771 15.5314 11.5162 15.5 11.7501 15.5C11.984 15.5 12.2231 15.5314 12.4257 15.6004C12.5251 15.6342 12.6467 15.6876 12.7537 15.7738C12.8612 15.8603 13.0001 16.0206 13.0001 16.25C13.0001 16.4794 12.8612 16.6397 12.7537 16.7262C12.6467 16.8124 12.5251 16.8658 12.4257 16.8996C12.2231 16.9686 11.984 17 11.7501 17C11.5162 17 11.2771 16.9686 11.0745 16.8996C10.9751 16.8658 10.8535 16.8124 10.7464 16.7262C10.6389 16.6397 10.5001 16.4794 10.5001 16.25C10.5001 16.0206 10.6389 15.8603 10.7464 15.7738C10.8535 15.6876 10.9751 15.6342 11.0745 15.6004ZM13.9201 12.5005C14.0566 12.2721 14.326 12 14.7301 12C15.1342 12 15.4036 12.2721 15.54 12.5005C15.6823 12.7387 15.7501 13.0274 15.7501 13.3125C15.7501 13.5976 15.6823 13.8863 15.54 14.1245C15.4036 14.3529 15.1342 14.625 14.7301 14.625C14.326 14.625 14.0566 14.3529 13.9201 14.1245C13.7778 13.8863 13.7101 13.5976 13.7101 13.3125C13.7101 13.0274 13.7778 12.7387 13.9201 12.5005ZM7.96016 12.5005C8.09658 12.2721 8.36599 12 8.7701 12C9.17421 12 9.44362 12.2721 9.58004 12.5005C9.72234 12.7387 9.79011 13.0274 9.79011 13.3125C9.79011 13.5976 9.72234 13.8863 9.58004 14.1245C9.44362 14.3529 9.17421 14.625 8.7701 14.625C8.36599 14.625 8.09658 14.3529 7.96016 14.1245C7.81786 13.8863 7.75009 13.5976 7.75009 13.3125C7.75009 13.0274 7.81786 12.7387 7.96016 12.5005Z" fill="currentColor"/></svg></div>
       <p>노트를 선택하거나 새 노트를 만들어 시작하세요</p>
     </div>
     <div id="statusbar">
@@ -536,10 +614,41 @@
 <!-- Sidebar Toggle -->
 <button id="sidebar-toggle" title="목록 열기/닫기">☰</button>
 
+<!-- Theme Toggle -->
+<button id="theme-toggle" title="다크/라이트 모드 전환">
+  <span id="theme-icon">D</span>
+</button>
+
 <div id="toast"></div>
 
 <script type="module">
-import { Crepe, replaceAll } from './milkdown-crepe.bundle.js';
+import { Crepe, replaceAll, editorViewCtx } from './milkdown-crepe.bundle.js';
+
+// ─── THEME TOGGLE ─────────────────────────────────────────
+const themeToggle = document.getElementById('theme-toggle');
+const themeIcon   = document.getElementById('theme-icon');
+const THEME_KEY   = 'md_theme';
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  themeIcon.textContent = theme === 'light' ? 'W' : 'D';
+  themeToggle.title = theme === 'light' ? '다크 모드로 전환' : '라이트 모드로 전환';
+  localStorage.setItem(THEME_KEY, theme);
+}
+
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme') || 'dark';
+  applyTheme(current === 'dark' ? 'light' : 'dark');
+}
+
+themeToggle.addEventListener('click', toggleTheme);
+
+// 저장된 테마 복원
+(function() {
+  const saved = localStorage.getItem(THEME_KEY);
+  if (saved) applyTheme(saved);
+  else applyTheme('dark');
+})();
 
 // ─── CONFIG ───────────────────────────────────────────────
 const SUPABASE_URL = 'https://hkcbnibbguzbgqucnkzm.supabase.co';
@@ -642,7 +751,12 @@ function setSaveStatus(state) {
 
 function getMarkdown() {
   if (!crepe) return '';
-  try { return crepe.getMarkdown(); } catch { return ''; }
+  try {
+    let md = crepe.getMarkdown();
+    // <br /> → 빈 줄로 치환 (Obsidian 등 순수 마크다운 호환)
+    md = md.replace(/<br\s*\/?>/gi, '\n');
+    return md;
+  } catch { return ''; }
 }
 
 function updateCharCount() {
@@ -814,11 +928,81 @@ async function initEditor() {
     defaultValue: '',
     featureConfigs: {
       'code-mirror': { theme: 'dark' },
+      'block-edit': {
+        textGroup: {
+          label: '텍스트',
+          text: { label: '본문' },
+          h1: { label: '제목 1' },
+          h2: { label: '제목 2' },
+          h3: { label: '제목 3' },
+          h4: { label: '제목 4' },
+          h5: { label: '제목 5' },
+          h6: { label: '제목 6' },
+          quote: { label: '인용문' },
+          divider: { label: '구분선' },
+        },
+        listGroup: {
+          label: '목록',
+          bulletList: { label: '글머리 기호' },
+          orderedList: { label: '번호 목록' },
+          taskList: { label: '할 일 목록' },
+        },
+        advancedGroup: {
+          label: '고급',
+          image: { label: '이미지' },
+          codeBlock: { label: '코드 블록' },
+          table: { label: '표' },
+          math: { label: '수식' },
+        },
+      },
     },
   });
 
   await crepe.create();
   editorReady = true;
+
+  // ─── Heading / Blockquote Backspace Fix ───
+  crepe.editor.action((ctx) => {
+    const view = ctx.get(editorViewCtx);
+    view.dom.addEventListener('keydown', (e) => {
+      if (e.key !== 'Backspace') return;
+      // CodeMirror 코드 블록 내부는 건드리지 않음
+      if (e.target && e.target.closest && e.target.closest('.cm-editor')) return;
+      const { state } = view;
+      const { $from, empty } = state.selection;
+      if (!empty || $from.parentOffset !== 0) return;
+
+      // Fix 1: heading → paragraph 직변환
+      if ($from.parent.type.name === 'heading') {
+        const pos = $from.before();
+        const tr = state.tr.setNodeMarkup(pos, state.schema.nodes.paragraph);
+        view.dispatch(tr);
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        return;
+      }
+
+      // Fix 2: blockquote 첫 단락 맨 앞 → blockquote 해제
+      if ($from.depth >= 2 && $from.node(-1).type.name === 'blockquote') {
+        const bqNode = $from.node(-1);
+        const bqPos = $from.before(-1);
+        const firstChild = bqNode.firstChild;
+        if (!firstChild) return;
+        let tr = state.tr;
+        if (bqNode.childCount === 1) {
+          // 자식이 하나면 blockquote 전체를 해당 노드로 대체
+          tr = tr.replaceWith(bqPos, bqPos + bqNode.nodeSize, firstChild);
+        } else {
+          // 자식이 여럿이면 첫 번째만 blockquote 밖으로 꺼냄
+          tr = tr.delete(bqPos + 1, bqPos + 1 + firstChild.nodeSize);
+          tr = tr.insert(bqPos, state.schema.nodes.paragraph.create(null, firstChild.content));
+        }
+        view.dispatch(tr);
+        e.preventDefault();
+        e.stopImmediatePropagation();
+      }
+    }, true);
+  });
 
   crepe.on((listener) => {
     listener.markdownUpdated((_, md) => {
@@ -839,7 +1023,7 @@ function scheduleHighlight() {
 }
 
 function applyHashtagHighlight() {
-  if (!CSS.highlights) return;       // browser support check
+  if (!CSS.highlights) return;
   const editorEl = document.querySelector('#milkdown-editor .ProseMirror');
   if (!editorEl) return;
   const ranges = [];
@@ -856,8 +1040,11 @@ function applyHashtagHighlight() {
       ranges.push(r);
     }
   }
-  const hl = new Highlight(...ranges);
-  CSS.highlights.set('editor-hashtag', hl);
+  if (ranges.length > 0) {
+    CSS.highlights.set('editor-hashtag', new Highlight(...ranges));
+  } else {
+    CSS.highlights.delete('editor-hashtag');
+  }
 }
 
 // ─── AUTO SAVE ────────────────────────────────────────────

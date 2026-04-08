@@ -29,3 +29,30 @@
     0px 1px 3px 0px rgba(0, 0, 0, 0.5),
     0px 2px 8px 2px rgba(0, 0, 0, 0.3);
 }
+
+[data-theme="light"] .milkdown {
+  --crepe-color-background: #F5F5F5;
+  --crepe-color-on-background: #2D2D2D;
+  --crepe-color-surface: #EAEAEA;
+  --crepe-color-surface-low: #F0F0F0;
+  --crepe-color-on-surface: #2D2D2D;
+  --crepe-color-on-surface-variant: #555555;
+  --crepe-color-outline: #D0D0D0;
+  --crepe-color-primary: #005FB8;
+  --crepe-color-secondary: #D8D8D8;
+  --crepe-color-on-secondary: #2D2D2D;
+  --crepe-color-inverse: #2D2D2D;
+  --crepe-color-on-inverse: #F5F5F5;
+  --crepe-color-inline-code: #c7254e;
+  --crepe-color-error: #CC3333;
+  --crepe-color-hover: #E0E0E0;
+  --crepe-color-selected: #D8D8D8;
+  --crepe-color-inline-area: #E0E0E0;
+
+  --crepe-shadow-1:
+    0px 1px 3px 0px rgba(0, 0, 0, 0.1),
+    0px 1px 4px 1px rgba(0, 0, 0, 0.06);
+  --crepe-shadow-2:
+    0px 1px 3px 0px rgba(0, 0, 0, 0.1),
+    0px 2px 8px 2px rgba(0, 0, 0, 0.06);
+}
