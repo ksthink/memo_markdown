@@ -17,8 +17,8 @@
   --crepe-color-selected: #222222;
   --crepe-color-inline-area: #1a1a1a;
 
-  --crepe-font-title: 'neodgm', monospace;
-  --crepe-font-default: 'neodgm', monospace;
+  --crepe-font-title: 'MonaS12', 'Segoe UI', sans-serif;
+  --crepe-font-default: 'MonaS12', 'Segoe UI', sans-serif;
   --crepe-font-code:
     'Fira Code', Menlo, Monaco, 'Courier New', Courier, monospace;
 
