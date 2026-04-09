@@ -690,45 +690,6 @@
       50% { opacity: 0; }
     }
   </style>
-<script>
-(function() {
-  const steps = [
-    { action: 'type', text: '당신이 써내려 가', delay: 90 },
-    { action: 'pause', delay: 400 },
-    { action: 'delete', count: 1, delay: 80 },
-    { action: 'type', text: '갈 이야기', delay: 90 },
-  ];
-  const el = document.getElementById('tagline-text');
-  let current = '';
-  let stepIdx = 0;
-
-  function run() {
-    if (stepIdx >= steps.length) return;
-    const s = steps[stepIdx];
-    if (s.action === 'pause') {
-      stepIdx++;
-      setTimeout(run, s.delay);
-    } else if (s.action === 'type') {
-      let i = 0;
-      const iv = setInterval(() => {
-        current += s.text[i];
-        el.textContent = current;
-        i++;
-        if (i >= s.text.length) { clearInterval(iv); stepIdx++; run(); }
-      }, s.delay);
-    } else if (s.action === 'delete') {
-      let c = 0;
-      const iv = setInterval(() => {
-        current = current.slice(0, -1);
-        el.textContent = current;
-        c++;
-        if (c >= s.count) { clearInterval(iv); stepIdx++; run(); }
-      }, s.delay);
-    }
-  }
-  setTimeout(run, 500);
-})();
-</script>
 </head>
 <body>
 
@@ -736,6 +697,44 @@
 <div id="login-screen">
   <div class="login-box" id="auth-box">
     <p id="login-tagline" style="text-align:center;font-size:1.05rem;font-weight:700;color:var(--text-primary);margin:0 0 12px;min-height:1.5em;"><span id="tagline-text"></span><span id="tagline-cursor" style="animation:blink-ul 0.6s step-end infinite;">_</span></p>
+    <script>
+    (function() {
+      const steps = [
+        { action: 'type', text: '당신이 써내려 가', delay: 90 },
+        { action: 'pause', delay: 400 },
+        { action: 'delete', count: 1, delay: 80 },
+        { action: 'type', text: '갈 이야기', delay: 90 },
+      ];
+      const el = document.getElementById('tagline-text');
+      let current = '';
+      let stepIdx = 0;
+      function run() {
+        if (stepIdx >= steps.length) return;
+        const s = steps[stepIdx];
+        if (s.action === 'pause') {
+          stepIdx++;
+          setTimeout(run, s.delay);
+        } else if (s.action === 'type') {
+          let i = 0;
+          const iv = setInterval(() => {
+            current += s.text[i];
+            el.textContent = current;
+            i++;
+            if (i >= s.text.length) { clearInterval(iv); stepIdx++; run(); }
+          }, s.delay);
+        } else if (s.action === 'delete') {
+          let c = 0;
+          const iv = setInterval(() => {
+            current = current.slice(0, -1);
+            el.textContent = current;
+            c++;
+            if (c >= s.count) { clearInterval(iv); stepIdx++; run(); }
+          }, s.delay);
+        }
+      }
+      setTimeout(run, 500);
+    })();
+    </script>
     <div class="login-cat-wrap">
       <img src="cat.gif" alt="" width="72" height="72" decoding="async" />
     </div>
