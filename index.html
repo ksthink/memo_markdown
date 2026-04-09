@@ -700,10 +700,11 @@
     <script>
     (function() {
       const steps = [
-        { action: 'type', text: '당신이 써내려 가', delay: 90 },
-        { action: 'pause', delay: 400 },
-        { action: 'delete', count: 1, delay: 80 },
-        { action: 'type', text: '갈 이야기', delay: 90 },
+        { action: 'type', text: '당신이 써 내려갈 이야기', delay: 90 },
+        { action: 'pause', delay: 600 },
+        { action: 'delete', count: 12, delay: 50 },
+        { action: 'pause', delay: 300 },
+        { action: 'type', text: '당신이 써 내려갈 이야기', delay: 90 },
       ];
       const el = document.getElementById('tagline-text');
       let current = '';
