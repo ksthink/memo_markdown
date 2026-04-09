@@ -1012,6 +1012,9 @@ let searchQuery = '';
 let editorReady = false;
 let activeTag = null;
 let sortOrder = 'created_desc';
+let isLoadingNote = false;
+let lastSavedContent = '';
+let lastSavedTitle = '';
 
 // ─── DOM ──────────────────────────────────────────────────
 const app         = document.getElementById('app');
@@ -1317,12 +1320,14 @@ async function initEditor() {
 
   crepe.on((listener) => {
     listener.markdownUpdated((_, md) => {
-      if (!currentNoteId) return;
+      if (!currentNoteId || isLoadingNote) return;
       const note = notes.find(n => n.id === currentNoteId);
       if (note) note.content = md;
       updateCharCount();
-      debounceSave();
       scheduleHighlight();
+      if (md !== lastSavedContent) {
+        debounceSave();
+      }
     });
   });
 }
@@ -1380,6 +1385,8 @@ async function saveCurrentNote() {
       updated_at: new Date().toISOString(),
     });
     if (updated) note.updated_at = updated.updated_at;
+    lastSavedContent = note.content || '';
+    lastSavedTitle = note.title || '';
     setSaveStatus('saved');
     renderNoteList();
     if (hashtagPanel.classList.contains('active')) renderHashtags();
@@ -1426,10 +1433,14 @@ function selectNote(id) {
   emptyEditor.style.display = 'none';
   noteTitle.value = note.title;
 
+  isLoadingNote = true;
   if (crepe && editorReady) {
     crepe.editor.action(replaceAll(note.content || ''));
   }
+  requestAnimationFrame(() => { isLoadingNote = false; });
 
+  lastSavedContent = note.content || '';
+  lastSavedTitle = note.title || '';
   updateCharCount();
   setSaveStatus('saved');
   renderNoteList();
@@ -1462,7 +1473,9 @@ noteTitle.addEventListener('input', () => {
   if (!currentNoteId) return;
   const note = notes.find(n => n.id === currentNoteId);
   if (note) note.title = noteTitle.value;
-  debounceSave();
+  if (noteTitle.value !== lastSavedTitle) {
+    debounceSave();
+  }
 });
 
 // ─── SEARCH ───────────────────────────────────────────────
