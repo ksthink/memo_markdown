@@ -465,7 +465,7 @@
     #milkdown-editor .milkdown .ProseMirror li { margin-bottom: 4px; }
     #milkdown-editor .milkdown .ProseMirror li p { padding: 1px 0; }
     #milkdown-editor .milkdown .milkdown-code-block { margin: 16px 0; border-radius: 8px; }
-    #milkdown-editor .milkdown .milkdown-code-block .cm-editor { font-size: 13.5px; line-height: 1.6; }
+    #milkdown-editor .milkdown .milkdown-code-block .cm-editor { font-size: 13.5px; line-height: 1.6; font-family: var(--font) !important; }
     #milkdown-editor .milkdown .ProseMirror pre { border-radius: 8px; padding: 14px 18px; }
 
     /* ─── LIST MARKERS ─── */
@@ -553,15 +553,18 @@
     }
     #milkdown-editor .milkdown .milkdown-code-block .cm-editor {
       background: transparent !important;
+      font-family: var(--font) !important;
       font-kerning: auto;
       letter-spacing: normal;
     }
     #milkdown-editor .milkdown .milkdown-code-block .cm-content {
       color: #abb2bf !important;
+      font-family: var(--font) !important;
       font-kerning: auto;
       letter-spacing: normal;
     }
     #milkdown-editor .milkdown .milkdown-code-block .cm-line {
+      font-family: var(--font) !important;
       font-kerning: auto;
       letter-spacing: normal;
     }
