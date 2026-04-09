@@ -539,12 +539,111 @@
     #milkdown-editor .milkdown .milkdown-link-edit > .link-edit > .input-area { color: var(--text-primary) !important; }
     #milkdown-editor .milkdown .milkdown-link-preview > .link-preview > .button > svg,
     #milkdown-editor .milkdown .milkdown-link-edit > .link-edit > .button > svg { color: var(--text-secondary) !important; fill: var(--text-secondary) !important; }
-    #milkdown-editor .milkdown .milkdown-code-block { background: var(--bg-secondary) !important; border: 1px solid var(--border); }
-    #milkdown-editor .milkdown .milkdown-code-block .cm-editor { background: transparent !important; }
-    #milkdown-editor .milkdown .milkdown-code-block .cm-gutters { background: transparent !important; border-right: 1px solid var(--border) !important; color: var(--text-muted) !important; }
-    #milkdown-editor .milkdown .milkdown-code-block .language-picker { color: var(--text-muted) !important; }
-    [data-theme="light"] #milkdown-editor .milkdown .milkdown-code-block { background: #E8E8E8 !important; border: 1px solid var(--border); }
     #milkdown-editor .milkdown .crepe-placeholder::before { color: var(--text-muted) !important; }
+
+    /* ─── CODE BLOCK (COMMON) ─── */
+    #milkdown-editor .milkdown .milkdown-code-block {
+      background: #282c34 !important;
+      border: 1px solid #3a3f4b !important;
+      border-radius: 8px;
+      margin: 16px 0;
+    }
+    #milkdown-editor .milkdown .milkdown-code-block .cm-editor {
+      background: transparent !important;
+      font-kerning: auto;
+      letter-spacing: normal;
+    }
+    #milkdown-editor .milkdown .milkdown-code-block .cm-content {
+      color: #abb2bf !important;
+      font-kerning: auto;
+      letter-spacing: normal;
+    }
+    #milkdown-editor .milkdown .milkdown-code-block .cm-line {
+      font-kerning: auto;
+      letter-spacing: normal;
+    }
+    #milkdown-editor .milkdown .milkdown-code-block .cm-gutters {
+      background: #21252b !important;
+      border-right: 1px solid #3a3f4b !important;
+      color: #636d83 !important;
+    }
+    #milkdown-editor .milkdown .milkdown-code-block .cm-activeLineGutter {
+      background: #2c313a !important;
+      color: #8b95a7 !important;
+    }
+    #milkdown-editor .milkdown .milkdown-code-block .cm-activeLine {
+      background: rgba(255,255,255,0.04) !important;
+    }
+    #milkdown-editor .milkdown .milkdown-code-block .cm-selectionBackground {
+      background: #3E4451 !important;
+    }
+    #milkdown-editor .milkdown .milkdown-code-block .cm-matchingBracket {
+      background: rgba(186,208,248,0.28) !important;
+    }
+    #milkdown-editor .milkdown .milkdown-code-block .cm-cursor {
+      border-left-color: #528bff !important;
+      border-left-width: 2px !important;
+    }
+    #milkdown-editor .milkdown .milkdown-code-block .language-picker {
+      color: #636d83 !important;
+    }
+    #milkdown-editor .milkdown .milkdown-code-block .language-picker:hover {
+      color: #abb2bf !important;
+    }
+
+    /* ─── CODE BLOCK (LIGHT overrides) ─── */
+    [data-theme="light"] #milkdown-editor .milkdown .milkdown-code-block {
+      border: 1px solid #d0d0d0 !important;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    [data-theme="light"] #milkdown-editor .milkdown .milkdown-code-block .cm-cursor {
+      border-left-color: #f0c040 !important;
+    }
+
+    /* ─── FOCUS MODE FONT SCALE (×1.2) ─── */
+    #app.focus-mode #note-title {
+      font-size: calc(1.8rem * 1.2);
+    }
+    #app.focus-mode #milkdown-editor .milkdown .ProseMirror p {
+      font-size: calc(15.5px * 1.2);
+    }
+    #app.focus-mode #milkdown-editor .milkdown .ProseMirror h1 {
+      font-size: calc(1.95rem * 1.2);
+    }
+    #app.focus-mode #milkdown-editor .milkdown .ProseMirror h2 {
+      font-size: calc(1.55rem * 1.2);
+    }
+    #app.focus-mode #milkdown-editor .milkdown .ProseMirror h3 {
+      font-size: calc(1.28rem * 1.2);
+    }
+    #app.focus-mode #milkdown-editor .milkdown .ProseMirror h4 {
+      font-size: calc(1.12rem * 1.2);
+    }
+    #app.focus-mode #milkdown-editor .milkdown .ProseMirror h5 {
+      font-size: calc(1rem * 1.2);
+    }
+    #app.focus-mode #milkdown-editor .milkdown .ProseMirror h6 {
+      font-size: calc(0.92rem * 1.2);
+    }
+    #app.focus-mode #milkdown-editor .milkdown .milkdown-code-block .cm-editor {
+      font-size: calc(13.5px * 1.2);
+    }
+    #app.focus-mode #milkdown-editor .milkdown .milkdown-list-item-block li .label-wrapper .label {
+      font-size: calc(15px * 1.2);
+    }
+
+    /* ─── SORT BUTTONS ─── */
+    .sidebar-sort { padding: 0 16px 8px; display: flex; gap: 6px; }
+    .sort-btn {
+      flex: 1; padding: 6px 8px;
+      background: var(--bg-primary); border: 1px solid var(--border);
+      border-radius: 6px; color: var(--text-secondary);
+      font-size: 0.74rem; font-family: var(--font); cursor: pointer;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+      text-align: center;
+    }
+    .sort-btn:hover { background: var(--bg-hover); color: var(--text-primary); border-color: var(--accent); }
+    .sort-btn.active { background: var(--bg-active); color: var(--text-primary); border-color: var(--accent); }
 
     /* ─── LOADING ─── */
     #loading {
@@ -644,6 +743,10 @@
         </svg>
         <input id="sidebar-search" type="text" placeholder="노트 검색..." autocomplete="off" />
       </div>
+    </div>
+    <div class="sidebar-sort">
+      <button id="sort-date-btn" class="sort-btn active" title="생성일 정렬">생성일 ▼</button>
+      <button id="sort-title-btn" class="sort-btn" title="제목순 정렬">제목순(ㄱ)</button>
     </div>
     <div id="note-list"></div>
     <div class="sidebar-footer" id="note-count">0개의 노트</div>
@@ -755,7 +858,7 @@ const registerBtn       = document.getElementById('register-btn');
 const registerError     = document.getElementById('register-error');
 const registerSuccess   = document.getElementById('register-success');
 
-function isAuthed() { return !!sessionStorage.getItem(SESSION_KEY); }
+function isAuthed() { return !!localStorage.getItem(SESSION_KEY); }
 
 // 인증 전용 Supabase fetch
 async function authFetch(path, opts = {}) {
@@ -784,7 +887,7 @@ async function doLogin() {
     if (!rows || rows.length === 0 || rows[0].password_hash !== simpleHash(password)) {
       throw new Error('이메일 또는 비밀번호가 틀렸어요.');
     }
-    sessionStorage.setItem(SESSION_KEY, email);
+    localStorage.setItem(SESSION_KEY, email);
     loginScreen.style.display = 'none';
     initApp();
   } catch(e) {
@@ -895,7 +998,7 @@ async function dbFetch(path, opts = {}) {
   return res.json();
 }
 
-function currentUserEmail() { return sessionStorage.getItem(SESSION_KEY) || ''; }
+function currentUserEmail() { return localStorage.getItem(SESSION_KEY) || ''; }
 async function loadNotes()         { return (await dbFetch(`${TABLE}?user_email=eq.${encodeURIComponent(currentUserEmail())}&select=*&order=updated_at.desc`)) || []; }
 async function createNoteDB(data)  { const [r] = await dbFetch(TABLE, { method:'POST', body: JSON.stringify(data) }); return r; }
 async function patchNote(id, data) { const [r] = await dbFetch(`${TABLE}?id=eq.${id}`, { method:'PATCH', body: JSON.stringify(data) }); return r; }
@@ -908,6 +1011,7 @@ let crepe = null;
 let searchQuery = '';
 let editorReady = false;
 let activeTag = null;
+let sortOrder = 'created_desc';
 
 // ─── DOM ──────────────────────────────────────────────────
 const app         = document.getElementById('app');
@@ -1045,6 +1149,15 @@ function renderNoteList() {
     filtered = filtered.filter(n => extractTags(n.content).includes(activeTag));
   }
 
+  // 정렬 (생성일 기준 또는 제목순)
+  filtered.sort((a, b) => {
+    if (sortOrder === 'created_desc') return new Date(b.created_at) - new Date(a.created_at);
+    if (sortOrder === 'created_asc')  return new Date(a.created_at) - new Date(b.created_at);
+    if (sortOrder === 'title_asc')    return (a.title || '').localeCompare(b.title || '', 'ko');
+    if (sortOrder === 'title_desc')   return (b.title || '').localeCompare(a.title || '', 'ko');
+    return 0;
+  });
+
   filtered.forEach(n => {
     const item = document.createElement('div');
     item.className = 'note-item' + (n.id === currentNoteId ? ' active' : '');
@@ -1126,7 +1239,6 @@ async function initEditor() {
     root: document.getElementById('milkdown-editor'),
     defaultValue: '',
     featureConfigs: {
-      'code-mirror': { theme: 'dark' },
       'block-edit': {
         textGroup: {
           label: '텍스트',
@@ -1356,6 +1468,38 @@ noteTitle.addEventListener('input', () => {
 // ─── SEARCH ───────────────────────────────────────────────
 document.getElementById('sidebar-search').addEventListener('input', e => {
   searchQuery = e.target.value.trim();
+  renderNoteList();
+});
+
+// ─── SORT ─────────────────────────────────────────────────
+const sortDateBtn  = document.getElementById('sort-date-btn');
+const sortTitleBtn = document.getElementById('sort-title-btn');
+
+function updateSortButtons() {
+  const isDate = sortOrder.startsWith('created');
+  sortDateBtn.classList.toggle('active', isDate);
+  sortTitleBtn.classList.toggle('active', !isDate);
+  sortDateBtn.textContent  = sortOrder === 'created_asc' ? '생성일 ▲' : '생성일 ▼';
+  sortTitleBtn.textContent = sortOrder === 'title_desc' ? '제목순(ㅎ)' : '제목순(ㄱ)';
+}
+
+sortDateBtn.addEventListener('click', () => {
+  if (sortOrder.startsWith('created')) {
+    sortOrder = sortOrder === 'created_desc' ? 'created_asc' : 'created_desc';
+  } else {
+    sortOrder = 'created_desc';
+  }
+  updateSortButtons();
+  renderNoteList();
+});
+
+sortTitleBtn.addEventListener('click', () => {
+  if (sortOrder.startsWith('title')) {
+    sortOrder = sortOrder === 'title_asc' ? 'title_desc' : 'title_asc';
+  } else {
+    sortOrder = 'title_asc';
+  }
+  updateSortButtons();
   renderNoteList();
 });
 
