@@ -1497,21 +1497,13 @@ function updateSortButtons() {
 }
 
 sortDateBtn.addEventListener('click', () => {
-  if (sortOrder.startsWith('created')) {
-    sortOrder = sortOrder === 'created_desc' ? 'created_asc' : 'created_desc';
-  } else {
-    sortOrder = 'created_desc';
-  }
+  sortOrder = sortOrder === 'created_desc' ? 'created_asc' : 'created_desc';
   updateSortButtons();
   renderNoteList();
 });
 
 sortTitleBtn.addEventListener('click', () => {
-  if (sortOrder.startsWith('title')) {
-    sortOrder = sortOrder === 'title_asc' ? 'title_desc' : 'title_asc';
-  } else {
-    sortOrder = 'title_asc';
-  }
+  sortOrder = sortOrder === 'title_asc' ? 'title_desc' : 'title_asc';
   updateSortButtons();
   renderNoteList();
 });
