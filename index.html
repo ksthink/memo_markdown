@@ -1183,6 +1183,7 @@ themeToggle.addEventListener('click', toggleTheme);
 const SUPABASE_URL = 'https://hkcbnibbguzbgqucnkzm.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_Kx0gAQwUHagHrNyFZo7xjg_7Y72LCFn';
 const TABLE = 'notes';
+const TOKEN_REFRESH_BUFFER_SECONDS = 60;
 
 // ─── AUTH ─────────────────────────────────────────────────
 const SESSION_KEY   = 'md_session';
@@ -1255,7 +1256,7 @@ async function ensureValidSession() {
   const session = getSession();
   if (!session?.access_token || !session?.refresh_token || !currentUserEmail()) return false;
   const now = Math.floor(Date.now() / 1000);
-  if (session.expires_at && session.expires_at > now + 60) return true;
+  if (session.expires_at && session.expires_at > now + TOKEN_REFRESH_BUFFER_SECONDS) return true;
   try {
     const refreshed = await authApiFetch('token?grant_type=refresh_token', {
       method: 'POST',
@@ -1385,7 +1386,10 @@ document.getElementById('show-register-btn').addEventListener('click', showRegis
 document.getElementById('show-login-btn').addEventListener('click', showLoginForm);
 
 async function dbFetch(path, opts = {}) {
-  if (!(await ensureValidSession())) throw new Error('로그인이 필요해요.');
+  const hadSession = !!getSession();
+  if (!(await ensureValidSession())) {
+    throw new Error(hadSession ? '세션이 만료되었어요. 다시 로그인해 주세요.' : '로그인이 필요해요.');
+  }
   const headers = {
     'apikey': SUPABASE_KEY,
     'Authorization': `Bearer ${getSession().access_token}`,
@@ -1396,6 +1400,7 @@ async function dbFetch(path, opts = {}) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { ...opts, headers });
   if (res.status === 401 || res.status === 403) {
     clearSession();
+    setTimeout(() => location.reload(), 0);
     throw new Error('세션이 만료되었어요. 다시 로그인해 주세요.');
   }
   if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);

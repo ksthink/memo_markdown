@@ -174,7 +174,7 @@ Supabase PostgreSQL에 세 테이블이 정의되어 있습니다.
 | `id` | `uuid` (PK) | `gen_random_uuid()` | 자동 생성 UUID |
 | `email` | `text` (UNIQUE) | — | 이메일 (로그인 ID) |
 | `nickname` | `text` | — | 닉네임 |
-| `password_hash` | `text` | — | 레거시 컬럼 (현재 앱 인증 경로에서는 미사용) |
+| `password_hash` | `text` | — | 레거시 컬럼 (현재 앱 인증 경로에서는 미사용, 기존 데이터 호환 목적 보존) |
 | `created_at` | `timestamptz` | `now()` | 가입 시각 |
 
 ### `notes` 테이블 (마크다운 에디터용)
