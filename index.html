@@ -1185,13 +1185,7 @@ const SUPABASE_KEY = 'sb_publishable_Kx0gAQwUHagHrNyFZo7xjg_7Y72LCFn';
 const TABLE = 'notes';
 
 // ─── AUTH ─────────────────────────────────────────────────
-function simpleHash(str) {
-  let h = 5381;
-  for (let i = 0; i < str.length; i++) { h = ((h << 5) + h) ^ str.charCodeAt(i); h = h >>> 0; }
-  return h.toString(16);
-}
-const SESSION_KEY   = 'md_user';
-const USERS_TABLE   = 'users';
+const SESSION_KEY   = 'md_session';
 
 const loginScreen       = document.getElementById('login-screen');
 const loginFormEl       = document.getElementById('login-form');
@@ -1211,20 +1205,68 @@ const registerBtn       = document.getElementById('register-btn');
 const registerError     = document.getElementById('register-error');
 const registerSuccess   = document.getElementById('register-success');
 
-function isAuthed() { return !!localStorage.getItem(SESSION_KEY); }
+function getSession() {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
 
-// 인증 전용 Supabase fetch
-async function authFetch(path, opts = {}) {
-  const h = {
+function setSession(session) {
+  if (!session || !session.access_token) throw new Error('유효한 세션이 아니에요.');
+  localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+}
+
+function clearSession() {
+  localStorage.removeItem(SESSION_KEY);
+}
+
+function currentUserEmail() {
+  const s = getSession();
+  return s?.user?.email || '';
+}
+
+function isAuthed() {
+  const s = getSession();
+  return !!(s && s.access_token && currentUserEmail());
+}
+
+async function authApiFetch(path, opts = {}) {
+  const headers = {
     'apikey': SUPABASE_KEY,
-    'Authorization': `Bearer ${SUPABASE_KEY}`,
     'Content-Type': 'application/json',
-    'Prefer': 'return=representation',
+    ...opts.headers,
   };
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { headers: h, ...opts });
-  if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
-  if (res.status === 204) return null;
-  return res.json();
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/${path}`, { ...opts, headers });
+  const payload = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const msg = payload?.msg || payload?.error_description || payload?.error || `${res.status} auth error`;
+    throw new Error(msg);
+  }
+  return payload;
+}
+
+async function ensureValidSession() {
+  const session = getSession();
+  if (!session?.access_token || !session?.refresh_token || !currentUserEmail()) return false;
+  const now = Math.floor(Date.now() / 1000);
+  if (session.expires_at && session.expires_at > now + 60) return true;
+  try {
+    const refreshed = await authApiFetch('token?grant_type=refresh_token', {
+      method: 'POST',
+      body: JSON.stringify({ refresh_token: session.refresh_token }),
+    });
+    setSession(refreshed);
+    return true;
+  } catch {
+    clearSession();
+    return false;
+  }
 }
 
 async function doLogin() {
@@ -1236,13 +1278,13 @@ async function doLogin() {
   }
   loginBtn.disabled = true;
   try {
-    const rows = await authFetch(`${USERS_TABLE}?email=eq.${encodeURIComponent(email)}&select=password_hash,nickname`);
-    if (!rows || rows.length === 0 || rows[0].password_hash !== simpleHash(password)) {
-      throw new Error('이메일 또는 비밀번호가 틀렸어요.');
-    }
-    localStorage.setItem(SESSION_KEY, email);
+    const session = await authApiFetch('token?grant_type=password', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    });
+    setSession(session);
     loginScreen.style.display = 'none';
-    initApp();
+    await initApp();
   } catch(e) {
     loginError.textContent = e.message;
     idInput.classList.add('error');
@@ -1289,10 +1331,16 @@ async function doRegister() {
   }
   registerBtn.disabled = true;
   try {
-    await authFetch(USERS_TABLE, {
+    const signup = await authApiFetch('signup', {
       method: 'POST',
-      body: JSON.stringify({ email, nickname, password_hash: simpleHash(password) }),
+      body: JSON.stringify({ email, password, data: { nickname } }),
     });
+    if (signup?.access_token) {
+      setSession(signup);
+      loginScreen.style.display = 'none';
+      await initApp();
+      return;
+    }
     registerSuccess.textContent = '가입 완료! 로그인해 주세요 🎉';
     regEmailInput.value = '';
     regNicknameInput.value = '';
@@ -1336,22 +1384,24 @@ regPwInput.addEventListener('keydown', e => { if (e.key === 'Enter') doRegister(
 document.getElementById('show-register-btn').addEventListener('click', showRegisterForm);
 document.getElementById('show-login-btn').addEventListener('click', showLoginForm);
 
-// ─── SUPABASE ─────────────────────────────────────────────
-const headers = {
-  'apikey': SUPABASE_KEY,
-  'Authorization': `Bearer ${SUPABASE_KEY}`,
-  'Content-Type': 'application/json',
-  'Prefer': 'return=representation',
-};
-
 async function dbFetch(path, opts = {}) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { headers, ...opts });
+  if (!(await ensureValidSession())) throw new Error('로그인이 필요해요.');
+  const headers = {
+    'apikey': SUPABASE_KEY,
+    'Authorization': `Bearer ${getSession().access_token}`,
+    'Content-Type': 'application/json',
+    'Prefer': 'return=representation',
+    ...opts.headers,
+  };
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { ...opts, headers });
+  if (res.status === 401 || res.status === 403) {
+    clearSession();
+    throw new Error('세션이 만료되었어요. 다시 로그인해 주세요.');
+  }
   if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
   if (res.status === 204) return null;
   return res.json();
 }
-
-function currentUserEmail() { return localStorage.getItem(SESSION_KEY) || ''; }
 async function loadNotes()         { return (await dbFetch(`${TABLE}?user_email=eq.${encodeURIComponent(currentUserEmail())}&select=*&order=updated_at.desc`)) || []; }
 async function createNoteDB(data)  { const [r] = await dbFetch(TABLE, { method:'POST', body: JSON.stringify(data) }); return r; }
 async function patchNote(id, data) { const [r] = await dbFetch(`${TABLE}?id=eq.${id}`, { method:'PATCH', body: JSON.stringify(data) }); return r; }
@@ -2029,7 +2079,7 @@ sortTitleBtn.addEventListener('click', () => {
 document.getElementById('new-note-btn').addEventListener('click', addNote);
 
 document.getElementById('logout-btn').addEventListener('click', () => {
-  localStorage.removeItem(SESSION_KEY);
+  clearSession();
   location.reload();
 });
 
@@ -2091,13 +2141,16 @@ document.addEventListener('selectionchange', updateCustomCaret);
 document.addEventListener('keyup', updateCustomCaret);
 document.addEventListener('click', () => requestAnimationFrame(updateCustomCaret));
 
-if (isAuthed()) {
-  loginScreen.style.display = 'none';
-  initApp();
-} else {
-  loading.style.display = 'none';
-  idInput.focus();
-}
+(async () => {
+  if (await ensureValidSession()) {
+    loginScreen.style.display = 'none';
+    initApp();
+  } else {
+    clearSession();
+    loading.style.display = 'none';
+    idInput.focus();
+  }
+})();
 </script>
 </body>
 </html>
