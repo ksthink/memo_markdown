@@ -240,7 +240,7 @@ const SUPABASE_URL = 'https://your-project.supabase.co';
 const SUPABASE_KEY = 'your-anon-key';
 ```
 
-> `anon key`는 클라이언트에 공개되는 키이므로, 반드시 `schema.sql`의 RLS 정책을 함께 적용해 데이터 접근을 제한해야 합니다.
+> `익명 키(anon key)`는 클라이언트에 공개되는 키이므로, 반드시 `schema.sql`의 RLS 정책을 함께 적용해 데이터 접근을 제한해야 합니다.
 
 ### 4단계: 웹 서버 실행
 

@@ -1219,7 +1219,7 @@ function getSession() {
 }
 
 function setSession(session) {
-  if (!session || !session.access_token) throw new Error('유효한 세션이 아니에요.');
+  if (!session || !session.access_token || !session.refresh_token) throw new Error('유효한 세션이 아니에요.');
   localStorage.setItem(SESSION_KEY, JSON.stringify(session));
 }
 
@@ -1264,7 +1264,8 @@ async function ensureValidSession() {
     });
     setSession(refreshed);
     return true;
-  } catch {
+  } catch (e) {
+    console.error('Session refresh failed:', e);
     clearSession();
     return false;
   }
