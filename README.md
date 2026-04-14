@@ -202,6 +202,7 @@ Supabase PostgreSQL에 세 테이블이 정의되어 있습니다.
 | `created_at` | `timestamptz` | `now()` | 생성 시각 |
 
 > 현재 스키마는 RLS(Row Level Security) 활성화 기준이며, `notes`는 **로그인 사용자 이메일(auth.jwt email) = user_email** 정책으로 사용자별 접근이 제한됩니다.
+> `users`, `memos`는 정책을 추가하기 전까지 접근이 차단됩니다(기본 deny).
 
 ---
 

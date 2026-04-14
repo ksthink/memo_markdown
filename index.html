@@ -1220,7 +1220,13 @@ function getSession() {
 
 function setSession(session) {
   if (!session || !session.access_token || !session.refresh_token) throw new Error('유효한 세션이 아니에요.');
-  localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+  const expiresAtRaw = Number(session.expires_at);
+  const expiresAtSec = Number.isFinite(expiresAtRaw)
+    ? (expiresAtRaw > 1_000_000_000_000 ? Math.floor(expiresAtRaw / 1000) : Math.floor(expiresAtRaw))
+    : null;
+  const normalized = { ...session };
+  if (expiresAtSec) normalized.expires_at = expiresAtSec;
+  localStorage.setItem(SESSION_KEY, JSON.stringify(normalized));
 }
 
 function clearSession() {
@@ -1244,9 +1250,15 @@ async function authApiFetch(path, opts = {}) {
     ...opts.headers,
   };
   const res = await fetch(`${SUPABASE_URL}/auth/v1/${path}`, { ...opts, headers });
-  const payload = await res.json().catch(() => ({}));
+  const raw = await res.text();
+  let payload = {};
+  try {
+    payload = raw ? JSON.parse(raw) : {};
+  } catch (e) {
+    console.error('Auth response parse failed:', e);
+  }
   if (!res.ok) {
-    const msg = payload?.msg || payload?.error_description || payload?.error || `${res.status} auth error`;
+    const msg = payload?.msg || payload?.error_description || payload?.error || raw || `${res.status} auth error`;
     throw new Error(msg);
   }
   return payload;
@@ -1400,8 +1412,11 @@ async function dbFetch(path, opts = {}) {
   };
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { ...opts, headers });
   if (res.status === 401 || res.status === 403) {
-    clearSession();
-    throw new Error('세션이 만료되었어요. 다시 로그인해 주세요.');
+    if (res.status === 401) {
+      clearSession();
+      throw new Error('세션이 만료되었어요. 다시 로그인해 주세요.');
+    }
+    throw new Error('권한이 없어요. RLS 정책을 확인해 주세요.');
   }
   if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
   if (res.status === 204) return null;
