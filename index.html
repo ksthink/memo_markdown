@@ -1185,10 +1185,19 @@ const SUPABASE_KEY = 'sb_publishable_Kx0gAQwUHagHrNyFZo7xjg_7Y72LCFn';
 const TABLE = 'notes';
 
 // ─── AUTH ─────────────────────────────────────────────────
-function simpleHash(str) {
-  let h = 5381;
-  for (let i = 0; i < str.length; i++) { h = ((h << 5) + h) ^ str.charCodeAt(i); h = h >>> 0; }
-  return h.toString(16);
+const PBKDF2_ITERATIONS = 100000;
+const PBKDF2_KEY_BITS   = 256;
+
+async function hashPassword(password, salt) {
+  const enc = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw', enc.encode(password), { name: 'PBKDF2' }, false, ['deriveBits']
+  );
+  const bits = await crypto.subtle.deriveBits(
+    { name: 'PBKDF2', salt: enc.encode(salt), iterations: PBKDF2_ITERATIONS, hash: 'SHA-256' },
+    keyMaterial, PBKDF2_KEY_BITS
+  );
+  return Array.from(new Uint8Array(bits)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 const SESSION_KEY   = 'md_user';
 const USERS_TABLE   = 'users';
@@ -1237,7 +1246,8 @@ async function doLogin() {
   loginBtn.disabled = true;
   try {
     const rows = await authFetch(`${USERS_TABLE}?email=eq.${encodeURIComponent(email)}&select=password_hash,nickname`);
-    if (!rows || rows.length === 0 || rows[0].password_hash !== simpleHash(password)) {
+    const hash = await hashPassword(password, email);
+    if (!rows || rows.length === 0 || rows[0].password_hash !== hash) {
       throw new Error('이메일 또는 비밀번호가 틀렸어요.');
     }
     localStorage.setItem(SESSION_KEY, email);
@@ -1281,17 +1291,18 @@ async function doRegister() {
     setTimeout(() => { regNicknameInput.classList.remove('error'); registerError.textContent = ''; }, 1800);
     return;
   }
-  if (password.length < 4) {
-    registerError.textContent = '비밀번호는 4자 이상이어야 해요.';
+  if (password.length < 8) {
+    registerError.textContent = '비밀번호는 8자 이상이어야 해요.';
     regPwInput.classList.add('error');
     setTimeout(() => { regPwInput.classList.remove('error'); registerError.textContent = ''; }, 1800);
     return;
   }
   registerBtn.disabled = true;
   try {
+    const password_hash = await hashPassword(password, email);
     await authFetch(USERS_TABLE, {
       method: 'POST',
-      body: JSON.stringify({ email, nickname, password_hash: simpleHash(password) }),
+      body: JSON.stringify({ email, nickname, password_hash }),
     });
     registerSuccess.textContent = '가입 완료! 로그인해 주세요 🎉';
     regEmailInput.value = '';
@@ -1354,8 +1365,8 @@ async function dbFetch(path, opts = {}) {
 function currentUserEmail() { return localStorage.getItem(SESSION_KEY) || ''; }
 async function loadNotes()         { return (await dbFetch(`${TABLE}?user_email=eq.${encodeURIComponent(currentUserEmail())}&select=*&order=updated_at.desc`)) || []; }
 async function createNoteDB(data)  { const [r] = await dbFetch(TABLE, { method:'POST', body: JSON.stringify(data) }); return r; }
-async function patchNote(id, data) { const [r] = await dbFetch(`${TABLE}?id=eq.${id}`, { method:'PATCH', body: JSON.stringify(data) }); return r; }
-async function removeNoteDB(id)    { await dbFetch(`${TABLE}?id=eq.${id}`, { method:'DELETE' }); }
+async function patchNote(id, data) { const [r] = await dbFetch(`${TABLE}?id=eq.${id}&user_email=eq.${encodeURIComponent(currentUserEmail())}`, { method:'PATCH', body: JSON.stringify(data) }); return r; }
+async function removeNoteDB(id)    { await dbFetch(`${TABLE}?id=eq.${id}&user_email=eq.${encodeURIComponent(currentUserEmail())}`, { method:'DELETE' }); }
 
 // ─── STATE ────────────────────────────────────────────────
 let notes = [];
@@ -1467,7 +1478,7 @@ function renderHashtags() {
   tags.forEach(([tag, count]) => {
     const el = document.createElement('span');
     el.className = 'tag-item' + (activeTag === tag ? ' active' : '');
-    el.innerHTML = `${tag} <span class="tag-count">${count}</span>`;
+    el.innerHTML = `${escHtml(tag)} <span class="tag-count">${count}</span>`;
     el.addEventListener('click', () => {
       activeTag = activeTag === tag ? null : tag;
       renderHashtags();
