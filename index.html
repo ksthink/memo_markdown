@@ -1400,7 +1400,7 @@ async function dbFetch(path, opts = {}) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { ...opts, headers });
   if (res.status === 401 || res.status === 403) {
     clearSession();
-    setTimeout(() => location.reload(), 0);
+    location.reload();
     throw new Error('세션이 만료되었어요. 다시 로그인해 주세요.');
   }
   if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);

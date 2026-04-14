@@ -18,6 +18,7 @@ create table if not exists users (
   id            uuid        primary key default gen_random_uuid(),
   email         text        not null unique,
   nickname      text        not null,
+  -- legacy column: Supabase Auth 전환 후 앱 인증 경로에서는 사용하지 않음
   password_hash text        not null,
   created_at    timestamptz not null default now()
 );
