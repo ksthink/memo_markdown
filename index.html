@@ -1254,20 +1254,20 @@ async function authApiFetch(path, opts = {}) {
 
 async function ensureValidSession() {
   const session = getSession();
-  if (!session?.access_token || !session?.refresh_token || !currentUserEmail()) return false;
+  if (!session?.access_token || !session?.refresh_token || !currentUserEmail()) return 'missing';
   const now = Math.floor(Date.now() / 1000);
-  if (session.expires_at && session.expires_at > now + TOKEN_REFRESH_BUFFER_SECONDS) return true;
+  if (session.expires_at && session.expires_at > now + TOKEN_REFRESH_BUFFER_SECONDS) return 'valid';
   try {
     const refreshed = await authApiFetch('token?grant_type=refresh_token', {
       method: 'POST',
       body: JSON.stringify({ refresh_token: session.refresh_token }),
     });
     setSession(refreshed);
-    return true;
+    return 'valid';
   } catch (e) {
     console.error('Session refresh failed:', e);
     clearSession();
-    return false;
+    return 'expired';
   }
 }
 
@@ -1387,9 +1387,9 @@ document.getElementById('show-register-btn').addEventListener('click', showRegis
 document.getElementById('show-login-btn').addEventListener('click', showLoginForm);
 
 async function dbFetch(path, opts = {}) {
-  const hadSession = !!getSession();
-  if (!(await ensureValidSession())) {
-    throw new Error(hadSession ? '세션이 만료되었어요. 다시 로그인해 주세요.' : '로그인이 필요해요.');
+  const sessionState = await ensureValidSession();
+  if (sessionState !== 'valid') {
+    throw new Error(sessionState === 'expired' ? '세션이 만료되었어요. 다시 로그인해 주세요.' : '로그인이 필요해요.');
   }
   const headers = {
     'apikey': SUPABASE_KEY,
@@ -1401,8 +1401,7 @@ async function dbFetch(path, opts = {}) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { ...opts, headers });
   if (res.status === 401 || res.status === 403) {
     clearSession();
-    location.reload();
-    return null;
+    throw new Error('세션이 만료되었어요. 다시 로그인해 주세요.');
   }
   if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
   if (res.status === 204) return null;
@@ -2148,7 +2147,7 @@ document.addEventListener('keyup', updateCustomCaret);
 document.addEventListener('click', () => requestAnimationFrame(updateCustomCaret));
 
 (async () => {
-  if (await ensureValidSession()) {
+  if ((await ensureValidSession()) === 'valid') {
     loginScreen.style.display = 'none';
     initApp();
   } else {
