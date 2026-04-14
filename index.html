@@ -1401,7 +1401,7 @@ async function dbFetch(path, opts = {}) {
   if (res.status === 401 || res.status === 403) {
     clearSession();
     location.reload();
-    throw new Error('세션이 만료되었어요. 다시 로그인해 주세요.');
+    return null;
   }
   if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
   if (res.status === 204) return null;
