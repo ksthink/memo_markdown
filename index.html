@@ -1031,6 +1031,7 @@
       const catImg = document.getElementById('login-cat-img');
       let frame = 2;
       let pressing = 0;
+      let inputIdleTimer = null;
 
       function onDown() {
         pressing++;
@@ -1043,10 +1044,26 @@
         if (pressing === 0) catImg.src = '1.png';
       }
 
+      function onInput(e) {
+        const t = e.target;
+        const isTextField = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA');
+        if (!isTextField) return;
+
+        catImg.src = frame + '.png';
+        frame = frame === 2 ? 3 : 2;
+
+        clearTimeout(inputIdleTimer);
+        inputIdleTimer = setTimeout(function() {
+          if (pressing === 0) catImg.src = '1.png';
+        }, 140);
+      }
+
       document.addEventListener('keydown', function(e) { if (!e.repeat) onDown(); });
       document.addEventListener('keyup', onUp);
-      document.addEventListener('mousedown', onDown);
-      document.addEventListener('mouseup', onUp);
+      document.addEventListener('pointerdown', onDown);
+      document.addEventListener('pointerup', onUp);
+      document.addEventListener('pointercancel', onUp);
+      document.addEventListener('input', onInput);
     })();
     </script>
     <h2 class="auth-title" id="auth-title">memyo</h2>
