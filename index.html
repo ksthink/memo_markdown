@@ -315,28 +315,38 @@
       display: none;
     }
     #font-menu.open { display: block; }
-    .font-row {
+    .font-size-header {
       display: flex;
       align-items: center;
-      border-radius: 6px;
-      transition: background 0.15s;
+      padding: 4px 8px 4px 8px;
+      gap: 4px;
     }
-    .font-row:hover { background: var(--bg-hover); }
+    .font-size-label {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+    .font-menu-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 4px 0;
+    }
     .font-item {
-      flex: 1;
+      width: 100%;
       text-align: left;
       background: transparent;
       border: none;
-      border-radius: 6px 0 0 6px;
+      border-radius: 6px;
       padding: 7px 8px;
       color: var(--text-secondary);
       font-size: 0.74rem;
       font-family: var(--font);
       cursor: pointer;
-      transition: color 0.15s;
+      transition: background 0.15s, color 0.15s;
     }
-    .font-item:hover { color: var(--text-primary); }
+    .font-item:hover { background: var(--bg-hover); color: var(--text-primary); }
     .font-item.active {
+      background: var(--bg-active);
       color: var(--text-primary);
       font-weight: 700;
     }
@@ -350,7 +360,6 @@
     .font-size-btns {
       display: flex;
       gap: 2px;
-      padding: 3px 4px 3px 2px;
     }
     .font-size-btn {
       background: transparent;
@@ -1274,54 +1283,21 @@
       </div>
     </div>
     <div id="font-menu" aria-hidden="true">
-      <div class="font-row">
-        <button class="font-item" data-font-key="monas">모나스(기본)</button>
+      <div class="font-size-header">
+        <span class="font-size-label">폰트 크기</span>
         <span class="font-row-sep">|</span>
-        <div class="font-size-btns" data-size-key="monas">
+        <div class="font-size-btns" id="global-size-btns">
           <button class="font-size-btn active" data-size="normal">기본</button>
           <button class="font-size-btn" data-size="large">크게</button>
         </div>
       </div>
-      <div class="font-row">
-        <button class="font-item" data-font-key="mulmaru">물마루</button>
-        <span class="font-row-sep">|</span>
-        <div class="font-size-btns" data-size-key="mulmaru">
-          <button class="font-size-btn active" data-size="normal">기본</button>
-          <button class="font-size-btn" data-size="large">크게</button>
-        </div>
-      </div>
-      <div class="font-row">
-        <button class="font-item" data-font-key="iyagi">이야기</button>
-        <span class="font-row-sep">|</span>
-        <div class="font-size-btns" data-size-key="iyagi">
-          <button class="font-size-btn active" data-size="normal">기본</button>
-          <button class="font-size-btn" data-size="large">크게</button>
-        </div>
-      </div>
-      <div class="font-row">
-        <button class="font-item" data-font-key="nanum">나눔 스퀘어</button>
-        <span class="font-row-sep">|</span>
-        <div class="font-size-btns" data-size-key="nanum">
-          <button class="font-size-btn active" data-size="normal">기본</button>
-          <button class="font-size-btn" data-size="large">크게</button>
-        </div>
-      </div>
-      <div class="font-row">
-        <button class="font-item" data-font-key="kopub">코퍼스 바탕</button>
-        <span class="font-row-sep">|</span>
-        <div class="font-size-btns" data-size-key="kopub">
-          <button class="font-size-btn active" data-size="normal">기본</button>
-          <button class="font-size-btn" data-size="large">크게</button>
-        </div>
-      </div>
-      <div class="font-row">
-        <button class="font-item" data-font-key="gangwon">강원교육모두</button>
-        <span class="font-row-sep">|</span>
-        <div class="font-size-btns" data-size-key="gangwon">
-          <button class="font-size-btn active" data-size="normal">기본</button>
-          <button class="font-size-btn" data-size="large">크게</button>
-        </div>
-      </div>
+      <div class="font-menu-divider"></div>
+      <button class="font-item" data-font-key="monas">모나스(기본)</button>
+      <button class="font-item" data-font-key="mulmaru">물마루</button>
+      <button class="font-item" data-font-key="iyagi">이야기</button>
+      <button class="font-item" data-font-key="nanum">나눔 스퀘어</button>
+      <button class="font-item" data-font-key="kopub">코퍼스 바탕</button>
+      <button class="font-item" data-font-key="gangwon">강원교육모두</button>
     </div>
   </aside>
 
@@ -1411,32 +1387,17 @@ const FONT_SIZE_MAP = {
   gangwon: '16.5px',
 };
 const DEFAULT_FONT_SIZE = '15.5px';
-const FONT_SIZE_PREF_KEY = 'font-size-prefs'; // JSON object per fontKey
+const FONT_SIZE_PREF_KEY = 'font-size-global'; // 'normal' | 'large'
 
-function getFontSizePrefs() {
-  try { return JSON.parse(localStorage.getItem(FONT_SIZE_PREF_KEY) || '{}'); }
-  catch { return {}; }
-}
-
-function applyFontSize(fontKey, size) {
-  // size: 'normal' | 'large'
-  const prefs = getFontSizePrefs();
-  prefs[fontKey] = size;
-  localStorage.setItem(FONT_SIZE_PREF_KEY, JSON.stringify(prefs));
-
+function applyFontSize(size) {
+  localStorage.setItem(FONT_SIZE_PREF_KEY, size);
   if (size === 'large') {
     document.documentElement.setAttribute('data-font-size', 'large');
   } else {
     document.documentElement.removeAttribute('data-font-size');
   }
-
-  // UI: update active state only on the current font's size btns
-  document.querySelectorAll('.font-size-btns').forEach(group => {
-    if (group.dataset.sizeKey === fontKey) {
-      group.querySelectorAll('.font-size-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.size === size);
-      });
-    }
+  document.querySelectorAll('#global-size-btns .font-size-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.size === size);
   });
 }
 
@@ -1447,22 +1408,6 @@ function applyFont(fontKey) {
   localStorage.setItem(FONT_KEY, resolved);
   document.querySelectorAll('.font-item').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.fontKey === resolved);
-  });
-
-  // restore this font's size pref
-  const prefs = getFontSizePrefs();
-  const size = prefs[resolved] || 'normal';
-  if (size === 'large') {
-    document.documentElement.setAttribute('data-font-size', 'large');
-  } else {
-    document.documentElement.removeAttribute('data-font-size');
-  }
-  document.querySelectorAll('.font-size-btns').forEach(group => {
-    if (group.dataset.sizeKey === resolved) {
-      group.querySelectorAll('.font-size-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.size === size);
-      });
-    }
   });
 }
 
@@ -1476,6 +1421,9 @@ themeToggle.addEventListener('click', toggleTheme);
 
   const savedFont = localStorage.getItem(FONT_KEY);
   applyFont(savedFont || 'monas');
+
+  const savedSize = localStorage.getItem(FONT_SIZE_PREF_KEY) || 'normal';
+  applyFontSize(savedSize);
 })();
 
 // ─── CONFIG ───────────────────────────────────────────────
@@ -2361,14 +2309,10 @@ document.querySelectorAll('.font-item').forEach(btn => {
   });
 });
 
-document.querySelectorAll('.font-size-btn').forEach(btn => {
+document.querySelectorAll('#global-size-btns .font-size-btn').forEach(btn => {
   btn.addEventListener('click', e => {
     e.stopPropagation();
-    const group = btn.closest('.font-size-btns');
-    const fontKey = group.dataset.sizeKey;
-    applyFontSize(fontKey, btn.dataset.size);
-    // switch to this font as well
-    applyFont(fontKey);
+    applyFontSize(btn.dataset.size);
   });
 });
 
