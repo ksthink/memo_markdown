@@ -149,7 +149,7 @@
 
     /* ─── LAYOUT ─── */
     #app {
-      display: none; height: 100vh;
+      display: none; height: 100vh; overflow: hidden;
       grid-template-columns: 280px 1fr;
       grid-template-rows: 1fr auto;
       transition: grid-template-columns 0.25s ease;
@@ -506,7 +506,6 @@
 
     #milkdown-editor .milkdown {
       height: 100%;
-      overflow: hidden;
       background: var(--bg-primary) !important;
       color: var(--text-primary) !important;
       font-family: var(--font) !important;
