@@ -1026,21 +1026,24 @@
     <script>
     (function() {
       const catImg = document.getElementById('login-cat-img');
-      let idleTimer = null;
       let frame = 2;
+      let pressing = 0;
 
-      function onPress() {
+      function onDown() {
+        pressing++;
         catImg.src = frame + '.png';
         frame = frame === 2 ? 3 : 2;
-        clearTimeout(idleTimer);
-        idleTimer = setTimeout(function() {
-          catImg.src = '1.png';
-          frame = 2;
-        }, 500);
       }
 
-      document.addEventListener('keydown', onPress);
-      document.addEventListener('mousedown', onPress);
+      function onUp() {
+        pressing = Math.max(0, pressing - 1);
+        if (pressing === 0) catImg.src = '1.png';
+      }
+
+      document.addEventListener('keydown', function(e) { if (!e.repeat) onDown(); });
+      document.addEventListener('keyup', onUp);
+      document.addEventListener('mousedown', onDown);
+      document.addEventListener('mouseup', onUp);
     })();
     </script>
     <h2 class="auth-title" id="auth-title">memyo</h2>
