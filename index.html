@@ -481,7 +481,7 @@
 
     /* ─── MILKDOWN ─── */
     #milkdown-editor {
-      flex: 1; overflow-y: auto; padding: 0;
+      flex: 1; overflow-y: auto; overflow-x: hidden; padding: 0;
       scrollbar-width: thin; scrollbar-color: var(--border) transparent;
       caret-color: transparent;
     }
@@ -506,6 +506,7 @@
 
     #milkdown-editor .milkdown {
       height: 100%;
+      overflow: hidden;
       background: var(--bg-primary) !important;
       color: var(--text-primary) !important;
       font-family: var(--font) !important;
@@ -1779,7 +1780,12 @@ function renderNoteList() {
     const item = document.createElement('div');
     item.className = 'note-item' + (n.id === currentNoteId ? ' active' : '');
 
-    const preview = (n.content || '').replace(/[#*`>_\-\[\]()!~|]/g, '').substring(0, 60);
+    const preview = (n.content || '')
+      .replace(/<[^>]*>/g, '')
+      .replace(/[#*`>_\-\[\]()!~|\\]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .substring(0, 60);
     const updatedStr = formatRelative(n.updated_at);
     const createdStr = formatKoreanFull(n.created_at);
 
