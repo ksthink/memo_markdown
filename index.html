@@ -1021,8 +1021,49 @@
     })();
     </script>
     <div class="login-cat-wrap">
-      <img src="cat.gif" alt="" width="72" height="72" decoding="async" />
+      <img id="login-cat-img" src="1.png" alt="" width="72" height="72" decoding="async" />
     </div>
+    <script>
+    (function() {
+      const catImg = document.getElementById('login-cat-img');
+      let typing = false;
+      let idleTimer = null;
+      let frameTimer = null;
+      let frame = 2;
+
+      function startTyping() {
+        if (!typing) {
+          typing = true;
+          frame = 2;
+          catImg.src = frame + '.png';
+          frameTimer = setInterval(function() {
+            frame = frame === 2 ? 3 : 2;
+            catImg.src = frame + '.png';
+          }, 150);
+        }
+        clearTimeout(idleTimer);
+        idleTimer = setTimeout(stopTyping, 300);
+      }
+
+      function stopTyping() {
+        typing = false;
+        clearInterval(frameTimer);
+        frameTimer = null;
+        catImg.src = '1.png';
+      }
+
+      document.addEventListener('keydown', startTyping);
+      document.addEventListener('mousedown', startTyping);
+      document.addEventListener('keyup', function() {
+        clearTimeout(idleTimer);
+        idleTimer = setTimeout(stopTyping, 300);
+      });
+      document.addEventListener('mouseup', function() {
+        clearTimeout(idleTimer);
+        idleTimer = setTimeout(stopTyping, 300);
+      });
+    })();
+    </script>
     <h2 class="auth-title" id="auth-title">memyo</h2>
 
     <!-- 로그인 폼 -->
@@ -1213,6 +1254,21 @@ const registerSuccess   = document.getElementById('register-success');
 
 function isAuthed() { return !!localStorage.getItem(SESSION_KEY); }
 
+/* ─── AUTO-LOGOUT (30분 미입력 시) ─── */
+const IDLE_TIMEOUT = 30 * 60 * 1000;
+let idleTimer = null;
+function resetIdleTimer() {
+  if (idleTimer) clearTimeout(idleTimer);
+  if (!isAuthed()) return;
+  idleTimer = setTimeout(() => {
+    localStorage.removeItem(SESSION_KEY);
+    location.reload();
+  }, IDLE_TIMEOUT);
+}
+['mousemove','mousedown','keydown','touchstart','scroll','click'].forEach(evt =>
+  document.addEventListener(evt, resetIdleTimer, { passive: true })
+);
+
 // 인증 전용 Supabase fetch
 async function authFetch(path, opts = {}) {
   const h = {
@@ -1241,6 +1297,7 @@ async function doLogin() {
       throw new Error('이메일 또는 비밀번호가 틀렸어요.');
     }
     localStorage.setItem(SESSION_KEY, email);
+    resetIdleTimer();
     loginScreen.style.display = 'none';
     initApp();
   } catch(e) {
@@ -2092,6 +2149,7 @@ document.addEventListener('keyup', updateCustomCaret);
 document.addEventListener('click', () => requestAnimationFrame(updateCustomCaret));
 
 if (isAuthed()) {
+  resetIdleTimer();
   loginScreen.style.display = 'none';
   initApp();
 } else {
