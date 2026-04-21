@@ -431,7 +431,7 @@
     }
     #note-title {
       flex: 1; border: none; background: transparent;
-      font-size: 2.4rem; font-weight: 700; color: var(--text-primary);
+      font-size: 1.8rem; font-weight: 700; color: var(--text-primary);
       outline: none; font-family: var(--font);
     }
     #note-title::placeholder { color: var(--text-muted); }
@@ -808,7 +808,9 @@
 
     /* ─── FOCUS MODE FONT SCALE (×1.2) ─── */
     #app.focus-mode #note-title {
-      font-size: calc(2.4rem * 1.2); .milkdown .ProseMirror p {
+      font-size: calc(1.8rem * 1.2);
+    }
+    #app.focus-mode #milkdown-editor .milkdown .ProseMirror p {
       font-size: calc(var(--font-size-base) * 1.2);
     }
     #app.focus-mode #milkdown-editor .milkdown .ProseMirror h1 {
@@ -838,7 +840,7 @@
 
     /* ─── LARGE FONT MODE (×1.2) ─── */
     html[data-font-size="large"] #note-title {
-      font-size: calc(2.4rem * 1.2) !important;
+      font-size: calc(1.8rem * 1.2) !important;
     }
     html[data-font-size="large"] #milkdown-editor .milkdown .ProseMirror p {
       font-size: calc(var(--font-size-base) * 1.2) !important;
