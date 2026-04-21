@@ -1303,7 +1303,7 @@
 
   <div id="main">
     <div id="title-bar" style="display:none;">
-      <input id="note-title" type="text" placeholder="제목을 입력하세요..." />
+      <input id="note-title" type="text" placeholder="제목을 입력하세요..." spellcheck="false" />
       <button id="focus-btn" title="집중 모드">집중 켬</button>
     </div>
     <div id="editor-wrap" style="display:none;">
@@ -1933,6 +1933,7 @@ async function initEditor() {
 
   await crepe.create();
   editorReady = true;
+  document.querySelector('#milkdown-editor .ProseMirror')?.setAttribute('spellcheck', 'false');
 
   // TOC: 에디터 스크롤 시 활성 헤딩 업데이트
   document.getElementById('milkdown-editor').addEventListener('scroll', () => {
