@@ -10,10 +10,11 @@
   <link rel="stylesheet" href="milkdown-common.css" />
   <link rel="stylesheet" href="milkdown-frame-dark.css" />
   <style>
+    @import url("https://font.ksthink.com/f/monas12.css");
     @import url("https://font.ksthink.com/f/mulmaru.css");
     @import url("https://font.ksthink.com/f/iyagiggc.css");
-    @import url("https://font.ksthink.com/f/monas12.css");
     @import url("https://font.ksthink.com/f/nanumsquareneo-alt.css");
+    @import url("https://font.ksthink.com/f/kopub-dotum-medium.css");
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -1203,11 +1204,11 @@
       </div>
     </div>
     <div id="font-menu" aria-hidden="true">
-      <button class="font-item" data-font-key="default">기본</button>
+      <button class="font-item" data-font-key="monas">모나스(기본)</button>
       <button class="font-item" data-font-key="mulmaru">물마루</button>
       <button class="font-item" data-font-key="iyagi">이야기</button>
-      <button class="font-item" data-font-key="monas">모나스</button>
       <button class="font-item" data-font-key="nanum">나눔 스퀘어</button>
+      <button class="font-item" data-font-key="kopub">코퍼스 돋움</button>
     </div>
   </aside>
 
@@ -1273,11 +1274,11 @@ const themeIcon   = document.getElementById('theme-icon');
 const THEME_KEY   = 'md_theme';
 const FONT_KEY    = 'md_font';
 const FONT_MAP    = {
-  default: "'Segoe UI', sans-serif",
+  monas: "'MonaS12', 'Segoe UI', sans-serif",
   mulmaru: "'Mulmaru', 'Segoe UI', sans-serif",
   iyagi: "'IyagiGGC', 'Segoe UI', sans-serif",
-  monas: "'MonaS12', 'Segoe UI', sans-serif",
   nanum: "'NanumSquareNeo aLt', 'Segoe UI', sans-serif",
+  kopub: "'KoPub Dotum Medium', 'Segoe UI', sans-serif",
 };
 
 function applyTheme(theme) {
