@@ -76,12 +76,11 @@
       margin-bottom: 16px;
     }
     .login-cat-wrap img {
-      width: 144px; height: 144px;
+      width: 72px; height: 72px;
       border-radius: 50%;
       object-fit: cover;
       display: block;
-      border: 3px solid var(--border);
-      box-shadow: 0 0 0 4px var(--bg-secondary), 0 0 0 7px var(--border);
+      border: 2px solid #000;
       /* GPU 레이어 분리로 메인 스레드 부담 최소화 */
       will-change: transform;
       transform: translateZ(0);
@@ -1023,7 +1022,7 @@
     })();
     </script>
     <div class="login-cat-wrap">
-      <img id="login-cat-img" src="1.png" alt="" width="144" height="144" decoding="async" />
+      <img id="login-cat-img" src="1.png" alt="" width="72" height="72" decoding="async" />
     </div>
     <script>
     (function() {
