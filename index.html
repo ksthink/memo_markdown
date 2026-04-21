@@ -492,8 +492,9 @@
     #milkdown-editor .milkdown .editor > * { color: var(--text-primary); }
 
     /* ─── TYPOGRAPHY ─── */
+    :root { --font-size-base: 15.5px; }
     #milkdown-editor .milkdown .ProseMirror p {
-      font-size: 15.5px; line-height: 1.8; padding: 3px 0;
+      font-size: var(--font-size-base); line-height: 1.8; padding: 3px 0;
       letter-spacing: 0.01em; word-break: keep-all; overflow-wrap: break-word;
     }
     #milkdown-editor .milkdown .ProseMirror h1,
@@ -765,7 +766,7 @@
       font-size: calc(1.8rem * 1.2);
     }
     #app.focus-mode #milkdown-editor .milkdown .ProseMirror p {
-      font-size: calc(15.5px * 1.2);
+      font-size: calc(var(--font-size-base) * 1.2);
     }
     #app.focus-mode #milkdown-editor .milkdown .ProseMirror h1 {
       font-size: calc(1.95rem * 1.2);
@@ -1296,9 +1297,15 @@ function toggleTheme() {
   applyTheme(current === 'dark' ? 'light' : 'dark');
 }
 
+const FONT_SIZE_MAP = {
+  gangwon: '16.5px',
+};
+const DEFAULT_FONT_SIZE = '15.5px';
+
 function applyFont(fontKey) {
   const resolved = FONT_MAP[fontKey] ? fontKey : 'monas';
   document.documentElement.style.setProperty('--font', FONT_MAP[resolved]);
+  document.documentElement.style.setProperty('--font-size-base', FONT_SIZE_MAP[resolved] || DEFAULT_FONT_SIZE);
   localStorage.setItem(FONT_KEY, resolved);
   document.querySelectorAll('.font-item').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.fontKey === resolved);
