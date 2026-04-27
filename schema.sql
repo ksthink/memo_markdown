@@ -14,14 +14,14 @@ create table if not exists memos (
 alter table memos disable row level security;
 
 -- ─── users 테이블 (회원 계정) ───
-create table if not exists users (
+create table if not exists memo_users (
   id            uuid        primary key default gen_random_uuid(),
   email         text        not null unique,
   nickname      text        not null,
   password_hash text        not null,
   created_at    timestamptz not null default now()
 );
-alter table users disable row level security;
+alter table memo_users disable row level security;
 
 -- ─── notes 테이블 (마크다운 편집기) ───
 create table if not exists notes (
