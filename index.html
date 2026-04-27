@@ -1563,7 +1563,7 @@ async function doRegister() {
     setTimeout(() => { registerSuccess.textContent = ''; showLoginForm(); }, 1600);
   } catch(e) {
     const isConflict = e.message.includes('23505') || e.message.toLowerCase().includes('unique');
-    registerError.textContent = isConflict ? '이미 사용 중인 이메일이에요.' : '가입 중 오류가 발생했어요.';
+    registerError.textContent = isConflict ? '이미 사용 중인 이메일이에요.' : e.message;
     regEmailInput.classList.add('error');
     setTimeout(() => { regEmailInput.classList.remove('error'); registerError.textContent = ''; }, 1800);
   } finally {
