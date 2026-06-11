@@ -2528,14 +2528,14 @@ document.addEventListener('click', e => {
 
 // ─── KEYBOARD ─────────────────────────────────────────────
 document.addEventListener('keydown', e => {
-  if ((e.ctrlKey || e.metaKey) && e.key === 'n') { e.preventDefault(); addNote(); }
-  if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); clearTimeout(saveTimer); saveCurrentNote(); }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'n') { e.preventDefault(); e.stopPropagation(); addNote(); }
+  if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); e.stopPropagation(); clearTimeout(saveTimer); saveCurrentNote(); }
   if (e.key === 'Escape' && app.classList.contains('focus-mode')) {
     app.classList.remove('focus-mode');
     document.getElementById('focus-btn').textContent = '집중 켬';
     showToast('집중 모드 해제');
   }
-});
+}, true);
 
 // ─── INIT ─────────────────────────────────────────────────
 async function initApp() {
