@@ -95882,15 +95882,11 @@ var SlashProvider = class {
     }
     if (composing) {
       try {
-        var _csel = view.domSelectionRange();
-        var _cnode = _csel.focusNode;
-        if (_cnode && _cnode.nodeType === 3) {
-          var _ctxt = _cnode.textContent || '';
-          var _coff = _csel.focusOffset;
-          var _cbefore = _ctxt.slice(0, _coff);
-          if (_cbefore.startsWith('/') && this._compFilterCb) {
-            this._compFilterCb(_cbefore.slice(1));
-          }
+        var _$from2 = view.state.selection.$from;
+        var _modelTxt = _$from2.parent.textBetween(0, _$from2.parentOffset, void 0, '\uFFFC');
+        if (_modelTxt.startsWith('/') && this._compFilterCb) {
+          this._compFilterCb(_modelTxt.slice(1));
+          if (this.element) this.element.dataset.show = 'true';
         }
       } catch(_e) {}
       return;
@@ -126391,7 +126387,9 @@ var Menu = defineComponent({
     };
     watch2([groupInfo, show], () => {
       const { size: size2 } = groupInfo.value;
-      if (size2 === 0 && show.value) hide2();
+      if (size2 === 0 && show.value) {
+        if (!(window.__milkdownKoreanComposing && window.__milkdownKoreanComposing())) hide2();
+      }
       else if (hoverIndex.value >= size2) hoverIndex.value = 0;
     });
     const onHover = (index2, after) => {
@@ -126621,6 +126619,31 @@ var MenuView = class {
     __privateGet$5(this, _slashProvider)._compFilterCb = function(ft) {
       filter2.value = ft;
     };
+    var _self2 = self2;
+    var _compText = '';
+    var _isKoreanComposing = false;
+    var _imeFilter = function(compData) {
+      try {
+        var _$f = view.state.selection.$from;
+        var _modelText = _$f.parent.textBetween(0, _$f.parentOffset, void 0, '\uFFFC');
+        var _full = _modelText + (_compText || '');
+        if (_full.startsWith('/')) {
+          filter2.value = _full.slice(1);
+          show.value = true;
+          var _sp = __privateGet$5(_self2, _slashProvider);
+          if (_sp && _sp.element) _sp.element.dataset.show = 'true';
+        }
+      } catch(_e) {}
+    };
+    view.dom.addEventListener('compositionstart', function() { _isKoreanComposing = true; _compText = ''; });
+    view.dom.addEventListener('compositionupdate', function(e) { _compText = e.data || ''; _imeFilter(e.data); });
+    view.dom.addEventListener('compositionend', function() {
+      _isKoreanComposing = false; _compText = '';
+      var _sp2 = __privateGet$5(_self2, _slashProvider);
+      requestAnimationFrame(function() { _sp2.update(view); });
+    });
+    view.dom.addEventListener('input', function(e) { if (e.isComposing) _imeFilter(); });
+    window.__milkdownKoreanComposing = function() { return _isKoreanComposing; };
     this.update(view);
     ctx.set(menuAPI.key, {
       show: (pos) => this.show(pos),
