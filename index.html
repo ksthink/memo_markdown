@@ -478,6 +478,91 @@
     .dot.saving { background: #e0c050; }
     .dot.unsaved { background: var(--text-muted); }
     .status-sep { color: var(--border); }
+    #help-btn {
+      width: 20px; height: 20px; border-radius: 50%;
+      background: var(--bg-hover); border: 1px solid var(--border);
+      color: var(--text-secondary); cursor: pointer;
+      font-size: 0.7rem; font-weight: 700; font-family: var(--font);
+      display: inline-flex; align-items: center; justify-content: center;
+      transition: background 0.15s, color 0.15s;
+      padding: 0; line-height: 1;
+    }
+    #help-btn:hover { background: var(--bg-active); color: var(--text-primary); }
+
+    /* ─── HELP POPUP ─── */
+    #help-popup {
+      display: none; position: fixed; bottom: 36px; right: 24px;
+      width: 380px; max-height: calc(100vh - 80px);
+      background: var(--bg-secondary); border: 1px solid var(--border);
+      border-radius: 12px; box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+      z-index: 9500; overflow: hidden;
+      animation: help-pop-in 0.18s ease-out;
+    }
+    #help-popup.open { display: flex; flex-direction: column; }
+    @keyframes help-pop-in {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .help-popup-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 18px; border-bottom: 1px solid var(--border);
+      font-size: 0.88rem; font-weight: 700; color: var(--text-primary);
+    }
+    #help-popup-close {
+      background: none; border: none; cursor: pointer;
+      font-size: 1.2rem; color: var(--text-muted); padding: 0 4px;
+      line-height: 1; transition: color 0.15s;
+    }
+    #help-popup-close:hover { color: var(--text-primary); }
+    .help-popup-body {
+      overflow-y: auto; padding: 16px 18px 20px;
+      scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+    }
+    .help-popup-body::-webkit-scrollbar { width: 4px; }
+    .help-popup-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    .help-popup-body section { margin-bottom: 20px; }
+    .help-popup-body section:last-child { margin-bottom: 0; }
+    .help-popup-body h3 {
+      font-size: 0.78rem; font-weight: 700; color: var(--text-primary);
+      margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid var(--border);
+    }
+    .help-desc { font-size: 0.72rem; color: var(--text-secondary); margin-bottom: 8px; }
+    .help-table {
+      width: 100%; border-collapse: collapse; font-size: 0.72rem;
+    }
+    .help-table th {
+      text-align: left; padding: 4px 8px; font-weight: 600;
+      color: var(--text-muted); border-bottom: 1px solid var(--border);
+    }
+    .help-table td {
+      padding: 5px 8px; color: var(--text-secondary);
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    [data-theme="light"] .help-table td { border-bottom-color: rgba(0,0,0,0.04); }
+    .help-table td:first-child { white-space: nowrap; }
+    .help-table code {
+      font-size: 0.68rem; padding: 1px 5px; border-radius: 3px;
+      background: rgba(255,255,255,0.08); color: #d0d0d0;
+      font-family: var(--font);
+    }
+    [data-theme="light"] .help-table code { background: rgba(0,0,0,0.06); color: #c7254e; }
+    .help-table kbd {
+      font-size: 0.66rem; padding: 1px 5px; border-radius: 3px;
+      background: var(--bg-hover); border: 1px solid var(--border);
+      font-family: var(--font); color: var(--text-secondary);
+    }
+    .help-list {
+      list-style: none; padding: 0; font-size: 0.72rem;
+      color: var(--text-secondary); line-height: 1.7;
+    }
+    .help-list li { padding: 2px 0; }
+    .help-list li strong { color: var(--text-primary); }
+    .help-list code {
+      font-size: 0.68rem; padding: 1px 5px; border-radius: 3px;
+      background: rgba(255,255,255,0.08); color: #d0d0d0;
+      font-family: var(--font);
+    }
+    [data-theme="light"] .help-list code { background: rgba(0,0,0,0.06); color: #c7254e; }
 
     /* ─── MILKDOWN ─── */
     #milkdown-editor {
@@ -1083,6 +1168,12 @@
       #focus-btn {
         display: none !important;
       }
+
+      /* 도움말 팝업 모바일 */
+      #help-popup {
+        right: 8px; left: 8px; width: auto; bottom: 40px;
+        max-height: calc(100vh - 60px);
+      }
     }
 
     /* 모바일 햄버거 버튼 기본 스타일 (PC에서 숨김) */
@@ -1320,6 +1411,82 @@
     <span id="save-status"><span class="dot unsaved"></span> <span id="save-label">대기 중</span></span>
     <span class="status-sep">|</span>
     <span id="char-count">0자</span>
+    <span style="flex:1"></span>
+    <button id="help-btn" title="글쓰기 도움말" aria-label="글쓰기 도움말">?</button>
+  </div>
+
+  <div id="help-popup" aria-hidden="true">
+    <div class="help-popup-header">
+      <span>글쓰기 도움말</span>
+      <button id="help-popup-close" aria-label="닫기">&times;</button>
+    </div>
+    <div class="help-popup-body">
+      <section>
+        <h3>슬래시 명령어</h3>
+        <p class="help-desc">에디터에서 <code>/</code>를 입력하면 블록 메뉴가 열립니다.</p>
+        <table class="help-table">
+          <thead><tr><th>명령어</th><th>기능</th></tr></thead>
+          <tbody>
+            <tr><td><code>/제목1</code></td><td>제목 1 (H1)</td></tr>
+            <tr><td><code>/제목2</code></td><td>제목 2 (H2)</td></tr>
+            <tr><td><code>/제목3</code></td><td>제목 3 (H3)</td></tr>
+            <tr><td><code>/본문</code></td><td>본문 단락</td></tr>
+            <tr><td><code>/인용문</code></td><td>인용 블록</td></tr>
+            <tr><td><code>/구분선</code></td><td>가로 구분선</td></tr>
+            <tr><td><code>/글머리</code></td><td>글머리 기호 목록</td></tr>
+            <tr><td><code>/번호</code></td><td>번호 목록</td></tr>
+            <tr><td><code>/할일</code></td><td>할 일 목록 (체크박스)</td></tr>
+            <tr><td><code>/이미지</code></td><td>이미지 삽입 (URL)</td></tr>
+            <tr><td><code>/코드</code></td><td>코드 블록</td></tr>
+            <tr><td><code>/표</code></td><td>표 삽입</td></tr>
+            <tr><td><code>/수식</code></td><td>LaTeX 수식</td></tr>
+          </tbody>
+        </table>
+      </section>
+      <section>
+        <h3>마크다운 단축 문법</h3>
+        <table class="help-table">
+          <thead><tr><th>문법</th><th>결과</th></tr></thead>
+          <tbody>
+            <tr><td><code>**굵게**</code></td><td><strong>굵게</strong></td></tr>
+            <tr><td><code>*기울임*</code></td><td><em>기울임</em></td></tr>
+            <tr><td><code>~~취소선~~</code></td><td><del>취소선</del></td></tr>
+            <tr><td><code>`인라인 코드`</code></td><td>인라인 코드</td></tr>
+            <tr><td><code>[링크](url)</code></td><td>하이퍼링크</td></tr>
+            <tr><td><code># 해시태그</code></td><td>해시태그 (자동 하이라이트)</td></tr>
+            <tr><td><code>---</code></td><td>구분선</td></tr>
+            <tr><td><code>> 인용</code></td><td>인용문</td></tr>
+            <tr><td><code>- 항목</code></td><td>글머리 기호</td></tr>
+            <tr><td><code>1. 항목</code></td><td>번호 목록</td></tr>
+            <tr><td><code>- [ ] 할일</code></td><td>할 일 체크박스</td></tr>
+          </tbody>
+        </table>
+      </section>
+      <section>
+        <h3>키보드 단축키</h3>
+        <table class="help-table">
+          <thead><tr><th>단축키</th><th>기능</th></tr></thead>
+          <tbody>
+            <tr><td><kbd>Ctrl</kbd>+<kbd>N</kbd></td><td>새 노트 만들기</td></tr>
+            <tr><td><kbd>Ctrl</kbd>+<kbd>S</kbd></td><td>즉시 저장</td></tr>
+            <tr><td><kbd>Ctrl</kbd>+<kbd>B</kbd></td><td>굵게</td></tr>
+            <tr><td><kbd>Ctrl</kbd>+<kbd>I</kbd></td><td>기울임</td></tr>
+            <tr><td><kbd>Esc</kbd></td><td>집중 모드 해제</td></tr>
+          </tbody>
+        </table>
+      </section>
+      <section>
+        <h3>기타 기능</h3>
+        <ul class="help-list">
+          <li><strong>해시태그</strong> — 본문에 <code>#태그명</code> 입력 시 자동 하이라이트, 사이드바에서 필터링 가능</li>
+          <li><strong>집중 모드</strong> — 사이드바·상태바 숨김, 글씨 확대</li>
+          <li><strong>목차</strong> — 제목 자동 추출, 우측 TOC에서 클릭 시 이동</li>
+          <li><strong>이미지 리사이즈</strong> — 이미지 우측 하단 그립으로 크기 조절</li>
+          <li><strong>마크다운 내보내기</strong> — 노트 우클릭 → 마크다운 내보내기</li>
+          <li><strong>폰트 변경</strong> — 사이드바 하단 톱니바퀴 → 폰트 선택</li>
+        </ul>
+      </section>
+    </div>
   </div>
 </div>
 
@@ -2332,6 +2499,31 @@ document.addEventListener('click', e => {
 document.getElementById('logout-btn').addEventListener('click', () => {
   localStorage.removeItem(SESSION_KEY);
   location.reload();
+});
+
+// ─── HELP POPUP ─────────────────────────────────────────
+const helpBtn = document.getElementById('help-btn');
+const helpPopup = document.getElementById('help-popup');
+const helpPopupClose = document.getElementById('help-popup-close');
+
+helpBtn.addEventListener('click', e => {
+  e.stopPropagation();
+  helpPopup.classList.toggle('open');
+  helpPopup.setAttribute('aria-hidden', helpPopup.classList.contains('open') ? 'false' : 'true');
+});
+
+helpPopupClose.addEventListener('click', () => {
+  helpPopup.classList.remove('open');
+  helpPopup.setAttribute('aria-hidden', 'true');
+});
+
+helpPopup.addEventListener('click', e => e.stopPropagation());
+
+document.addEventListener('click', e => {
+  if (!helpPopup.classList.contains('open')) return;
+  if (helpPopup.contains(e.target) || helpBtn.contains(e.target)) return;
+  helpPopup.classList.remove('open');
+  helpPopup.setAttribute('aria-hidden', 'true');
 });
 
 // ─── KEYBOARD ─────────────────────────────────────────────
