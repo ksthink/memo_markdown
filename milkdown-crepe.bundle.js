@@ -95880,7 +95880,22 @@ var SlashProvider = class {
       (this.#root ?? view.dom.parentElement ?? document.body).appendChild(this.element);
       this.#initialized = true;
     }
-    if (composing || isSame) return;
+    if (composing) {
+      try {
+        var _csel = view.domSelectionRange();
+        var _cnode = _csel.focusNode;
+        if (_cnode && _cnode.nodeType === 3) {
+          var _ctxt = _cnode.textContent || '';
+          var _coff = _csel.focusOffset;
+          var _cbefore = _ctxt.slice(0, _coff);
+          if (_cbefore.startsWith('/') && this._compFilterCb) {
+            this._compFilterCb(_cbefore.slice(1));
+          }
+        }
+      } catch(_e) {}
+      return;
+    }
+    if (isSame) return;
     if (!this.#shouldShow(view, prevState)) {
       this.hide();
       return;
@@ -126602,6 +126617,9 @@ var MenuView = class {
     };
     __privateGet$5(this, _slashProvider).onHide = () => {
       show.value = false;
+    };
+    __privateGet$5(this, _slashProvider)._compFilterCb = function(ft) {
+      filter2.value = ft;
     };
     this.update(view);
     ctx.set(menuAPI.key, {
