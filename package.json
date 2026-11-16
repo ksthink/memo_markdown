@@ -5,7 +5,7 @@
   "type": "module",
   "description": "브라우저 기반 마크다운 WYSIWYG 노트 에디터",
   "scripts": {
-    "build": "esbuild build-entry.js --bundle --format=esm --outfile=milkdown-crepe.bundle.js",
+    "bundle": "esbuild build-entry.js --bundle --format=esm --outfile=milkdown-crepe.bundle.js",
     "test": "node --test tests/"
   },
   "dependencies": {

@@ -155,7 +155,7 @@ memyo/
 ├── milkdown-common.css         # Milkdown 에디터 공통 테마 CSS (~2000줄)
 ├── milkdown-frame-dark.css     # Milkdown 다크/라이트 모드 CSS 변수 오버라이드
 ├── build-entry.js              # esbuild 엔트리 포인트 (3줄)
-├── package.json                # npm 의존성과 스크립트 (build, test)
+├── package.json                # npm 의존성과 스크립트 (bundle, test)
 ├── tests/modules.test.mjs      # auth.js / db.js 단위 테스트
 ├── vercel.json                 # Vercel 배포 설정: 보안 헤더 (CSP 등)
 ├── .vercelignore               # 배포에서 제외할 파일 (*.sql, build-entry.js, tests/)
@@ -220,7 +220,7 @@ npx esbuild build-entry.js \
   --outfile=milkdown-crepe.bundle.js
 ```
 
-> 출력: `milkdown-crepe.bundle.js` (~5MB) — `npm run build`로도 실행할 수 있습니다.  
+> 출력: `milkdown-crepe.bundle.js` (~5MB) — `npm run bundle`로도 실행할 수 있습니다.  
 > ⚠️ 이미 빌드된 번들이 포함되어 있으므로, 수정하지 않았다면 이 단계는 건너뛸 수 있습니다.
 
 ### 3단계: Supabase 설정
