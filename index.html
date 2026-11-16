@@ -137,6 +137,33 @@
     [data-theme="light"] #register-btn:hover { background: #005FB8; color: #ffffff; }
     #login-error, #register-error { margin-top: 10px; font-size: 0.78rem; color: var(--danger); text-align: center; min-height: 18px; }
     #register-success { margin-top: 10px; font-size: 0.78rem; color: var(--success); text-align: center; min-height: 18px; }
+
+    /* 비밀번호 변경 창 */
+    #pw-dialog {
+      margin: auto; padding: 22px;
+      width: min(320px, calc(100vw - 32px));
+      border: 1px solid var(--border); border-radius: 12px;
+      background: var(--bg-secondary); color: var(--text-primary);
+      font-family: var(--font);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.45);
+    }
+    #pw-dialog::backdrop { background: rgba(0,0,0,0.5); }
+    #pw-dialog h3 { font-size: 1rem; font-weight: 700; }
+    #pw-dialog .login-fields { margin-top: 16px; }
+    #pw-dialog .login-fields input { letter-spacing: 0.15em; }
+    #pw-dialog .login-fields input::placeholder { letter-spacing: normal; }
+    #pw-error { margin-top: 10px; font-size: 0.78rem; color: var(--danger); min-height: 18px; }
+    .pw-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
+    .pw-actions button {
+      padding: 8px 14px; border-radius: 8px;
+      border: 1.5px solid var(--border); background: transparent;
+      color: var(--text-primary); font-family: var(--font);
+      font-size: 0.82rem; font-weight: 700; cursor: pointer;
+    }
+    .pw-actions button[type="submit"] {
+      background: var(--text-primary); color: var(--bg-primary); border-color: var(--text-primary);
+    }
+    .pw-actions button:disabled { opacity: 0.5; cursor: default; }
     .form-switch { text-align: center; margin-top: 16px; }
     .form-switch span { font-size: 0.76rem; color: var(--text-muted); }
     .form-switch button {
@@ -331,7 +358,7 @@
       background: var(--border);
       margin: 4px 0;
     }
-    .font-item {
+    .font-item, .menu-item {
       width: 100%;
       text-align: left;
       background: transparent;
@@ -344,7 +371,7 @@
       cursor: pointer;
       transition: background 0.15s, color 0.15s;
     }
-    .font-item:hover { background: var(--bg-hover); color: var(--text-primary); }
+    .font-item:hover, .menu-item:hover { background: var(--bg-hover); color: var(--text-primary); }
     .font-item.active {
       background: var(--bg-active);
       color: var(--text-primary);
@@ -1389,6 +1416,8 @@
       <button class="font-item" data-font-key="nanum">나눔 스퀘어</button>
       <button class="font-item" data-font-key="kopub">코퍼스 바탕</button>
       <button class="font-item" data-font-key="gangwon">강원교육모두</button>
+      <div class="font-menu-divider"></div>
+      <button class="menu-item" id="change-pw-btn">비밀번호 변경</button>
     </div>
   </aside>
 
@@ -1518,6 +1547,23 @@
 <button id="theme-toggle" title="다크/라이트 모드 전환">
   <span id="theme-icon">D</span>
 </button>
+
+<!-- 비밀번호 변경 -->
+<dialog id="pw-dialog" aria-labelledby="pw-dialog-title">
+  <form id="pw-form">
+    <h3 id="pw-dialog-title">비밀번호 변경</h3>
+    <div class="login-fields">
+      <input id="pw-current" type="password" placeholder="현재 비밀번호" autocomplete="current-password" required />
+      <input id="pw-new" type="password" placeholder="새 비밀번호 (6자 이상)" autocomplete="new-password" required />
+      <input id="pw-new2" type="password" placeholder="새 비밀번호 확인" autocomplete="new-password" required />
+    </div>
+    <div id="pw-error" role="alert"></div>
+    <div class="pw-actions">
+      <button type="button" id="pw-cancel">취소</button>
+      <button type="submit" id="pw-submit">변경</button>
+    </div>
+  </form>
+</dialog>
 
 <div id="toast"></div>
 
@@ -1659,11 +1705,13 @@ const AUTH_ERRORS = {
   over_email_send_rate_limit: '메일 발송 한도를 넘었어요. 잠시 후 다시 시도해 주세요.',
   over_request_rate_limit: '요청이 너무 많아요. 잠시 후 다시 시도해 주세요.',
   signup_disabled: '지금은 회원가입을 받지 않아요.',
+  same_password: '새 비밀번호가 현재 비밀번호와 같아요.',
+  current_password_mismatch: '현재 비밀번호가 틀렸어요.',
 };
 
-async function authFetch(path, body, token) {
+async function authFetch(path, body, token, method = 'POST') {
   const res = await fetch(`${SUPABASE_URL}/auth/v1/${path}`, {
-    method: 'POST',
+    method,
     headers: {
       'apikey': SUPABASE_KEY,
       'Content-Type': 'application/json',
@@ -2594,6 +2642,56 @@ document.addEventListener('click', e => {
 });
 
 document.getElementById('logout-btn').addEventListener('click', logout);
+
+// ─── 비밀번호 변경 ────────────────────────────────────────
+const pwDialog  = document.getElementById('pw-dialog');
+const pwForm    = document.getElementById('pw-form');
+const pwCurrent = document.getElementById('pw-current');
+const pwNew     = document.getElementById('pw-new');
+const pwNew2    = document.getElementById('pw-new2');
+const pwError   = document.getElementById('pw-error');
+const pwSubmit  = document.getElementById('pw-submit');
+
+document.getElementById('change-pw-btn').addEventListener('click', () => {
+  fontMenu.classList.remove('open');
+  fontMenu.setAttribute('aria-hidden', 'true');
+  pwForm.reset();
+  pwError.textContent = '';
+  pwDialog.showModal();
+});
+document.getElementById('pw-cancel').addEventListener('click', () => pwDialog.close());
+
+async function changePassword(currentPassword, newPassword) {
+  // 현재 비밀번호로 다시 로그인해 본인 확인 (새 세션으로 교체)
+  let session;
+  try {
+    session = await authFetch('token?grant_type=password', { email: currentUserEmail(), password: currentPassword });
+  } catch (e) {
+    if (e.status === 400) throw new Error('현재 비밀번호가 틀렸어요.');
+    throw e;
+  }
+  setSession(session);
+  await authFetch('user', { password: newPassword, current_password: currentPassword }, session.access_token, 'PUT');
+}
+
+pwForm.addEventListener('submit', async e => {
+  e.preventDefault();
+  pwError.textContent = '';
+  if (pwNew.value.length < 6) { pwError.textContent = '새 비밀번호는 6자 이상이어야 해요.'; pwNew.focus(); return; }
+  if (pwNew.value !== pwNew2.value) { pwError.textContent = '새 비밀번호가 서로 달라요.'; pwNew2.focus(); return; }
+  if (pwNew.value === pwCurrent.value) { pwError.textContent = '새 비밀번호가 현재 비밀번호와 같아요.'; pwNew.focus(); return; }
+  pwSubmit.disabled = true;
+  try {
+    await changePassword(pwCurrent.value, pwNew.value);
+    pwDialog.close();
+    pwForm.reset();
+    showToast('비밀번호를 변경했어요.');
+  } catch (err) {
+    pwError.textContent = err.message;
+  } finally {
+    pwSubmit.disabled = false;
+  }
+});
 
 // ─── HELP POPUP ─────────────────────────────────────────
 const helpBtn = document.getElementById('help-btn');
