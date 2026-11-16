@@ -231,7 +231,7 @@ let searchQuery = '';
 let editorReady = false;
 let activeTag = null;
 let sortOrder = 'created_desc';
-let isLoadingNote = false;
+let dirty = false;            // 현재 노트에 아직 저장하지 않은 변경이 있는지
 let lastSavedContent = '';
 let lastSavedTitle = '';
 
@@ -267,14 +267,14 @@ function setSaveStatus(state) {
   else                        { dot.classList.add('unsaved'); saveLabel.textContent = '대기 중'; }
 }
 
+// <br /> → 줄바꿈으로 치환 (Obsidian 등 순수 마크다운 호환)
+function toPlainMarkdown(md) {
+  return (md || '').replace(/<br\s*\/?>/gi, '\n');
+}
+
 function getMarkdown() {
   if (!crepe) return '';
-  try {
-    let md = crepe.getMarkdown();
-    // <br /> → 빈 줄로 치환 (Obsidian 등 순수 마크다운 호환)
-    md = md.replace(/<br\s*\/?>/gi, '\n');
-    return md;
-  } catch { return ''; }
+  try { return toPlainMarkdown(crepe.getMarkdown()); } catch { return ''; }
 }
 
 function updateCharCount() {
@@ -426,9 +426,10 @@ function renderNoteList() {
 document.addEventListener('click', () => { contextMenu.style.display = 'none'; });
 
 document.getElementById('ctx-export').addEventListener('click', () => {
+  if (ctxNoteId === currentNoteId) syncFromEditor();
   const note = notes.find(n => n.id === ctxNoteId);
   if (!note) return;
-  const blob = new Blob([note.content || ''], { type: 'text/plain;charset=utf-8' });
+  const blob = new Blob([toPlainMarkdown(note.content)], { type: 'text/plain;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -593,7 +594,7 @@ async function initEditor() {
 
   crepe.on((listener) => {
     listener.markdownUpdated((_, md) => {
-      if (!currentNoteId || isLoadingNote) return;
+      if (!currentNoteId) return;
       const note = notes.find(n => n.id === currentNoteId);
       if (note) note.content = md;
       updateCharCount();
@@ -756,35 +757,64 @@ function applyHashtagHighlight() {
 let saveTimer = null;
 
 function debounceSave() {
+  dirty = true;
   setSaveStatus('unsaved');
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(saveCurrentNote, 1000);
+  saveTimer = setTimeout(() => { saveTimer = null; saveCurrentNote(); }, 1000);
 }
 
-async function saveCurrentNote() {
+// 에디터의 최신 내용을 현재 노트에 반영.
+// Milkdown의 변경 알림(markdownUpdated)은 입력 후 조금 늦게 오므로, 노트를 바꾸거나 페이지를 떠나기 직전에는 직접 읽는다.
+function syncFromEditor() {
+  if (!currentNoteId || !crepe || !editorReady) return;
+  const note = notes.find(n => n.id === currentNoteId);
+  if (!note) return;
+  let md;
+  try { md = crepe.getMarkdown(); } catch { return; }
+  if (md !== lastSavedContent) { note.content = md; dirty = true; }
+}
+
+async function saveCurrentNote({ keepalive = false } = {}) {
   if (!currentNoteId) return;
   const note = notes.find(n => n.id === currentNoteId);
   if (!note) return;
 
+  const title = note.title;
+  const content = note.content;
+  dirty = false; // 저장 중에 다시 편집하면 debounceSave가 true로 되돌림
   setSaveStatus('saving');
   try {
     const updated = await patchNote(note.id, {
-      title: note.title,
-      content: note.content,
+      title,
+      content,
       updated_at: new Date().toISOString(),
-    });
-    if (updated) note.updated_at = updated.updated_at;
-    lastSavedContent = note.content || '';
-    lastSavedTitle = note.title || '';
-    setSaveStatus('saved');
+    }, { keepalive: keepalive && new Blob([title || '', content || '']).size < 60000 });
+    note.updated_at = updated.updated_at;
+    // 저장을 기다리는 동안 다른 노트로 옮겼다면, 지금 열린 노트의 저장 상태는 건드리지 않음
+    if (currentNoteId === note.id) {
+      lastSavedContent = content || '';
+      lastSavedTitle = title || '';
+      setSaveStatus(dirty ? 'unsaved' : 'saved');
+    }
     renderNoteList();
     if (hashtagPanel.classList.contains('active')) renderHashtags();
   } catch(e) {
     console.error(e);
-    setSaveStatus('unsaved');
+    if (currentNoteId === note.id) { dirty = true; setSaveStatus('unsaved'); }
     showToast('저장 오류: ' + e.message);
   }
 }
+
+// 저장하지 않은 변경이 있으면 지금 바로 저장 (탭을 닫거나 다른 탭·앱으로 넘어갈 때)
+function flushSave() {
+  syncFromEditor();
+  if (!dirty) return;
+  clearTimeout(saveTimer);
+  saveTimer = null;
+  saveCurrentNote({ keepalive: true });
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushSave(); });
+window.addEventListener('pagehide', flushSave);
 
 // ─── NOTE ACTIONS ─────────────────────────────────────────
 async function addNote() {
@@ -808,10 +838,11 @@ async function addNote() {
 }
 
 function selectNote(id) {
-  if (currentNoteId && saveTimer) {
-    clearTimeout(saveTimer);
-    saveCurrentNote();
-  }
+  // 열려 있던 노트에 저장하지 않은 변경이 있을 때만 저장
+  syncFromEditor();
+  clearTimeout(saveTimer);
+  saveTimer = null;
+  if (dirty) saveCurrentNote();
 
   currentNoteId = id;
   const note = notes.find(n => n.id === id);
@@ -822,14 +853,15 @@ function selectNote(id) {
   emptyEditor.style.display = 'none';
   noteTitle.value = note.title;
 
-  isLoadingNote = true;
+  lastSavedContent = note.content || '';
   if (crepe && editorReady) {
     crepe.editor.action(replaceAll(note.content || ''));
+    // 에디터가 마크다운을 다시 써 내면 저장된 원문과 표기가 조금 다를 수 있다.
+    // 그 결과를 기준으로 삼아야, 열기만 한 노트가 '변경됨'으로 판단돼 저장되지 않는다.
+    try { lastSavedContent = crepe.getMarkdown(); } catch {}
   }
-  requestAnimationFrame(() => { isLoadingNote = false; });
-
-  lastSavedContent = note.content || '';
   lastSavedTitle = note.title || '';
+  dirty = false;
   updateCharCount();
   setSaveStatus('saved');
   renderNoteList();
@@ -932,7 +964,14 @@ document.addEventListener('click', e => {
   fontMenu.setAttribute('aria-hidden', 'true');
 });
 
-document.getElementById('logout-btn').addEventListener('click', logout);
+document.getElementById('logout-btn').addEventListener('click', async () => {
+  // 로그아웃 전에 저장하지 않은 변경을 먼저 저장
+  syncFromEditor();
+  clearTimeout(saveTimer);
+  saveTimer = null;
+  if (dirty) await saveCurrentNote();
+  logout();
+});
 
 // ─── 비밀번호 변경 ────────────────────────────────────────
 const pwDialog  = document.getElementById('pw-dialog');
@@ -999,7 +1038,14 @@ document.addEventListener('click', e => {
 // ─── KEYBOARD ─────────────────────────────────────────────
 document.addEventListener('keydown', e => {
   if ((e.ctrlKey || e.metaKey) && e.key === 'n') { e.preventDefault(); e.stopPropagation(); addNote(); }
-  if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); e.stopPropagation(); clearTimeout(saveTimer); saveCurrentNote(); }
+  if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+    e.preventDefault(); e.stopPropagation();
+    syncFromEditor();
+    clearTimeout(saveTimer);
+    saveTimer = null;
+    if (dirty) saveCurrentNote();
+    else if (currentNoteId) setSaveStatus('saved');
+  }
   if (e.key === 'Escape' && app.classList.contains('focus-mode')) {
     app.classList.remove('focus-mode');
     document.getElementById('focus-btn').textContent = '집중 켬';

@@ -557,3 +557,11 @@ test('authFetch: error carries the GoTrue error_code', async () => {
   queue(json(422, { error_code: 'weak_password', msg: 'x' }));
   await assert.rejects(auth.authFetch('signup', {}), e => e.code === 'weak_password' && e.status === 422);
 });
+
+test('patchNote: keepalive option is passed to fetch only when requested', async () => {
+  putSession(); queue(json(200, [{ id: 'n1' }]), json(200, [{ id: 'n1' }]));
+  await db.patchNote('n1', { title: 'a' });
+  await db.patchNote('n1', { title: 'b' }, { keepalive: true });
+  assert.equal(calls[0].opts.keepalive, false);
+  assert.equal(calls[1].opts.keepalive, true);
+});

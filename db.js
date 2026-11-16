@@ -28,8 +28,9 @@ async function dbFetch(path, opts = {}, retry = true) {
 export async function loadNotes()         { return (await dbFetch(`${TABLE}?select=*&order=updated_at.desc`)) || []; }
 export async function createNoteDB(data)  { const [r] = (await dbFetch(TABLE, { method:'POST', body: JSON.stringify(data) })) || []; return r; }
 // 수정된 행이 없으면(다른 기기에서 삭제된 노트 등) 저장 실패로 처리
-export async function patchNote(id, data) {
-  const [r] = (await dbFetch(`${TABLE}?id=eq.${id}`, { method:'PATCH', body: JSON.stringify(data) })) || [];
+// keepalive: 페이지를 떠나는 중에도 요청이 끝까지 전송되게 함 (본문 64KB 이하일 때만 가능)
+export async function patchNote(id, data, { keepalive = false } = {}) {
+  const [r] = (await dbFetch(`${TABLE}?id=eq.${id}`, { method:'PATCH', body: JSON.stringify(data), keepalive })) || [];
   if (!r) throw new Error('노트를 찾을 수 없어요. 다른 기기에서 삭제됐을 수 있어요.');
   return r;
 }
