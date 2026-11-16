@@ -1,3 +1,4 @@
 *.sql
 build-entry.js
 tests/
+NATIVE_PLAN.md
