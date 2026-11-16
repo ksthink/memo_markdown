@@ -14,7 +14,7 @@ Supabase를 백엔드로 활용해 별도 서버 구축 없이 노트를 클라�
 
 - **제로 프레임워크** — Vanilla HTML / CSS / JS만 사용, 프레임워크 의존 없음
 - **싱글 파일** — `index.html` 하나에 마크업 / 스타일 / 로직 올인원 (~2,100줄)
-- **서버리스** — Supabase REST API로 DB·인증 처리, 별도 백엔드 불필요
+- **서버리스** — Supabase REST API로 DB 처리, Supabase Auth로 인증, 별도 백엔드 불필요
 - **다중 사용자** — 이메일 기반 회원가입/로그인으로 사용자별 노트 격리
 - **반응형** — 데스크톱 / 모바일 완전 대응 (768px 브레이크포인트)
 
@@ -50,10 +50,10 @@ Supabase를 백엔드로 활용해 별도 서버 구축 없이 노트를 클라�
 
 | 기능 | 설명 |
 |------|------|
-| **회원가입** | 이메일 / 닉네임 / 비밀번호로 계정 생성 (이메일 유효성 검증, 비밀번호 4자 이상, 닉네임 2자 이상) |
-| **로그인** | 이메일 + 비밀번호 로그인, `localStorage` 기반 세션 유지 |
+| **회원가입** | 이메일 / 닉네임 / 비밀번호로 계정 생성 (Supabase Auth, 이메일 인증, 비밀번호 6자 이상, 닉네임 2자 이상) |
+| **로그인** | 이메일 + 비밀번호 로그인, 토큰을 `localStorage`에 보관하고 자동 갱신 |
 | **로그아웃** | 세션 제거 후 로그인 화면으로 복귀 |
-| **데이터 격리** | `user_email` 기반으로 사용자별 노트 분리 조회·저장 |
+| **데이터 격리** | DB의 RLS 정책(`user_id = auth.uid()`)으로 본인 노트만 조회·수정·삭제 가능 |
 
 ### UI / UX
 
@@ -147,7 +147,8 @@ memo/
 ├── milkdown-frame-dark.css     # Milkdown 다크/라이트 모드 CSS 변수 오버라이드
 ├── build-entry.js              # esbuild 엔트리 포인트 (3줄)
 ├── package.json                # npm 의존성 정의
-├── schema.sql                  # Supabase 데이터베이스 스키마 (users + notes + memos 테이블)
+├── schema.sql                  # 새 프로젝트용 DB 스키마 (notes 테이블 + RLS 정책)
+├── migrate-to-supabase-auth.sql # 기존 DB를 Supabase Auth + RLS로 옮기는 스크립트
 └── README.md                   # 이 문서
 ```
 
@@ -165,43 +166,21 @@ export { editorViewCtx } from '@milkdown/core';
 
 ## 🗄 데이터베이스 스키마
 
-Supabase PostgreSQL에 세 테이블이 정의되어 있습니다.
+회원 계정은 **Supabase Auth**(`auth.users`)가 관리하므로 별도 회원 테이블이 없습니다.
 
-### `users` 테이블 (회원 계정)
-
-| 컬럼 | 타입 | 기본값 | 설명 |
-|------|------|--------|------|
-| `id` | `uuid` (PK) | `gen_random_uuid()` | 자동 생성 UUID |
-| `email` | `text` (UNIQUE) | — | 이메일 (로그인 ID) |
-| `nickname` | `text` | — | 닉네임 |
-| `password_hash` | `text` | — | DJB2 해시된 비밀번호 |
-| `created_at` | `timestamptz` | `now()` | 가입 시각 |
-
-### `notes` 테이블 (마크다운 에디터용)
+### `notes` 테이블
 
 | 컬럼 | 타입 | 기본값 | 설명 |
 |------|------|--------|------|
 | `id` | `uuid` (PK) | `gen_random_uuid()` | 자동 생성 UUID |
-| `user_email` | `text` | `''` | 소유자 이메일 (사용자별 데이터 격리) |
+| `user_id` | `uuid` (FK → `auth.users`) | `auth.uid()` | 소유자. 접근 권한 판단 기준 |
+| `user_email` | `text` | `''` | 소유자 이메일 (기록용) |
 | `title` | `text` | `'제목 없음'` | 노트 제목 |
 | `content` | `text` | `''` | 마크다운 본문 |
 | `updated_at` | `timestamptz` | `now()` | 마지막 수정 시각 |
 | `created_at` | `timestamptz` | `now()` | 생성 시각 |
 
-### `memos` 테이블 (포스트잇 메모앱용)
-
-| 컬럼 | 타입 | 기본값 | 설명 |
-|------|------|--------|------|
-| `id` | `uuid` (PK) | `gen_random_uuid()` | 자동 생성 UUID |
-| `content` | `text` | `''` | 메모 내용 |
-| `color` | `text` | `'#fef08a'` | 메모 배경색 |
-| `pinned` | `boolean` | `false` | 고정 여부 |
-| `completed` | `boolean` | `false` | 완료 여부 |
-| `position_x` | `integer` | `100` | X 좌표 |
-| `position_y` | `integer` | `100` | Y 좌표 |
-| `created_at` | `timestamptz` | `now()` | 생성 시각 |
-
-> 세 테이블 모두 RLS(Row Level Security)는 비활성화 상태입니다.
+> RLS(Row Level Security)가 켜져 있으며, 로그인한 사용자는 `user_id`가 본인인 노트만 읽고 쓸 수 있습니다.
 
 ---
 
@@ -233,7 +212,9 @@ npx esbuild build-entry.js \
 
 1. [Supabase](https://supabase.com/)에서 프로젝트를 생성합니다.
 2. **SQL Editor**에서 `schema.sql`을 실행하여 테이블을 생성합니다.
-3. `index.html` 내의 Supabase 설정값을 본인의 프로젝트 값으로 교체합니다:
+   (예전 방식의 DB를 쓰고 있었다면 `migrate-to-supabase-auth.sql`의 안내를 따릅니다.)
+3. **Authentication → URL Configuration**의 Site URL을 앱 주소로 설정합니다. (인증 메일의 링크가 돌아올 주소)
+4. `index.html` 내의 Supabase 설정값을 본인의 프로젝트 값으로 교체합니다:
 
 ```javascript
 const SUPABASE_URL = 'https://your-project.supabase.co';
@@ -329,43 +310,30 @@ Milkdown 자체 CSS 변수도 다크/라이트 모드에 맞게 오버라이드�
 
 ## 🔐 인증 시스템
 
-memyo는 이메일 기반 다중 사용자 인증 시스템을 사용합니다.
+memyo는 **Supabase Auth**의 이메일 + 비밀번호 인증을 사용합니다. 비밀번호 저장과 검증은 Supabase 서버가 처리하며, 앱은 비밀번호나 해시를 보관하지 않습니다.
 
 ### 회원가입 흐름
 
 ```
-이메일 + 닉네임 + 비밀번호 입력 → 유효성 검증 → DJB2 해시 → Supabase users 테이블 저장 → 로그인 폼 전환
+이메일 + 닉네임 + 비밀번호 입력 → 유효성 검증 → Supabase Auth 가입 요청 → 인증 메일의 링크 클릭 → 로그인
 ```
 
-- 이메일 형식 검증 (정규식)
-- 닉네임 2자 이상
-- 비밀번호 4자 이상
-- 이메일 중복 시 에러 처리 (PostgreSQL unique 위반 23505)
+- 닉네임 2자 이상, 비밀번호 6자 이상
+- 닉네임은 사용자 메타데이터(`user_metadata.nickname`)에 저장
+- Supabase 기본 메일 발송은 제한이 크므로, 실사용 시 커스텀 SMTP 설정을 권장
 
 ### 로그인 흐름
 
 ```
-이메일 + 비밀번호 입력 → Supabase에서 사용자 조회 → password_hash 비교 → localStorage 저장 → 앱 진입
-```
-
-### DJB2 해시 알고리즘
-
-```javascript
-function simpleHash(str) {
-  let h = 5381;
-  for (let i = 0; i < str.length; i++)
-    h = ((h << 5) + h) ^ str.charCodeAt(i);
-  return (h >>> 0).toString(16);  // unsigned 32-bit → 16진수
-}
+이메일 + 비밀번호 입력 → Supabase Auth가 검증 → 액세스 토큰·갱신 토큰 발급 → localStorage 저장 → 앱 진입
 ```
 
 | 항목 | 설명 |
 |------|------|
-| **초기값** | `5381` |
-| **연산** | `h = ((h << 5) + h) ^ charCode` (각 문자마다) |
-| **출력** | unsigned 32-bit 정수 → 16진수 문자열 |
-| **저장** | `localStorage` — 브라우저 닫아도 유지 |
-| **로그아웃** | `localStorage` 세션 키 제거 → 페이지 새로고침 |
+| **세션 저장** | `localStorage`의 `md_session` (액세스 토큰, 갱신 토큰, 만료 시각) |
+| **토큰 갱신** | 만료 1분 전부터 자동 갱신, 갱신 토큰이 폐기되면 로그아웃 |
+| **데이터 접근** | 모든 DB 요청에 사용자 토큰을 실어 보내고, DB의 RLS 정책이 본인 노트만 허용 |
+| **자동 로그아웃** | 30분간 입력이 없으면 로그아웃 |
 | **실패 시** | 에러 메시지 + 입력창 `shake` 애니메이션 |
 
 ---
@@ -422,14 +390,16 @@ function simpleHash(str) {
 
 | 함수 | 설명 |
 |------|------|
-| `simpleHash(str)` | DJB2 해시 → 16진 문자열 변환 |
-| `isAuthed()` | `localStorage`에서 인증 상태 확인 |
-| `currentUserEmail()` | 로그인된 사용자 이메일 반환 |
+| `getSession()` / `setSession()` / `clearSession()` | `localStorage`의 세션(토큰) 읽기·저장·삭제 |
+| `isAuthed()` | 세션 존재 여부 확인 |
+| `authFetch(path, body, token)` | Supabase Auth API 호출 |
+| `getAccessToken()` | 유효한 액세스 토큰 반환 (만료 임박 시 갱신) |
+| `refreshSession()` | 갱신 토큰으로 새 토큰 발급 |
+| `currentUserEmail()` | 토큰에 담긴 사용자 이메일 반환 |
 | `doLogin()` | 이메일 + 비밀번호 로그인 |
 | `doRegister()` | 회원가입 (이메일/닉네임/비밀번호 유효성 검증 포함) |
-| `showLoginForm()` | 로그인 폼 표시 |
-| `showRegisterForm()` | 회원가입 폼 표시 |
-| `authFetch(path, opts)` | 인증 전용 Supabase REST fetch |
+| `logout()` | 세션 삭제 후 로그인 화면으로 복귀 |
+| `showLoginForm()` / `showRegisterForm()` | 로그인·회원가입 폼 전환 |
 
 #### 테마 관련
 
@@ -442,8 +412,8 @@ function simpleHash(str) {
 
 | 함수 | 설명 |
 |------|------|
-| `dbFetch(path, opts)` | REST API fetch 래퍼 (apikey, Authorization 헤더 자동 추가) |
-| `loadNotes()` | `user_email` 필터링하여 노트 로드 |
+| `dbFetch(path, opts)` | REST API fetch 래퍼 (사용자 토큰을 Authorization 헤더에 추가, 401 시 갱신 후 재시도) |
+| `loadNotes()` | 노트 로드 (RLS가 본인 노트만 반환) |
 | `createNoteDB(data)` | POST로 새 노트 생성 (`user_email` 포함) |
 | `patchNote(id, data)` | PATCH로 노트 업데이트 |
 | `removeNoteDB(id)` | DELETE로 노트 삭제 |

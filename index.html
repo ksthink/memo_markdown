@@ -1318,7 +1318,7 @@
       <div class="login-fields">
         <input id="reg-email-input" type="email" placeholder="이메일" autocomplete="email" />
         <input id="reg-nickname-input" type="text" placeholder="닉네임" autocomplete="nickname" />
-        <input id="reg-pw-input" type="password" placeholder="비밀번호" autocomplete="new-password" />
+        <input id="reg-pw-input" type="password" placeholder="비밀번호 (6자 이상)" autocomplete="new-password" />
       </div>
       <button id="register-btn">회원가입</button>
       <div id="register-error"></div>
@@ -1598,14 +1598,35 @@ const SUPABASE_URL = 'https://hkcbnibbguzbgqucnkzm.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhrY2JuaWJiZ3V6YmdxdWNua3ptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3MzYzODEsImV4cCI6MjA4OTMxMjM4MX0.RHdNkhkZDHs1Dd84_pnvieZP-T6E6FiLwyl3N-8YBQ4';
 const TABLE = 'notes';
 
-// ─── AUTH ─────────────────────────────────────────────────
-function simpleHash(str) {
-  let h = 5381;
-  for (let i = 0; i < str.length; i++) { h = ((h << 5) + h) ^ str.charCodeAt(i); h = h >>> 0; }
-  return h.toString(16);
+// ─── AUTH (Supabase Auth) ─────────────────────────────────
+// 세션: { access_token, refresh_token, expires_at(초) }
+const SESSION_KEY = 'md_session';
+localStorage.removeItem('md_user'); // 예전 방식(이메일만 저장하던) 세션 제거
+
+function getSession() {
+  try { return JSON.parse(localStorage.getItem(SESSION_KEY)); } catch { return null; }
 }
-const SESSION_KEY   = 'md_user';
-const USERS_TABLE   = 'memo_users';
+function setSession(data) {
+  localStorage.setItem(SESSION_KEY, JSON.stringify({
+    access_token: data.access_token,
+    refresh_token: data.refresh_token,
+    expires_at: data.expires_at || Math.floor(Date.now() / 1000) + (data.expires_in || 3600),
+  }));
+}
+function clearSession() { localStorage.removeItem(SESSION_KEY); }
+
+// 이메일 인증 링크를 누르고 돌아온 경우: 주소의 #access_token=... 을 세션으로 저장
+(function consumeAuthRedirect() {
+  const p = new URLSearchParams(location.hash.slice(1));
+  if (!p.get('access_token') || !p.get('refresh_token')) return;
+  setSession({
+    access_token: p.get('access_token'),
+    refresh_token: p.get('refresh_token'),
+    expires_at: Number(p.get('expires_at')) || 0,
+    expires_in: Number(p.get('expires_in')) || 0,
+  });
+  history.replaceState(null, '', location.pathname + location.search);
+})();
 
 const loginScreen       = document.getElementById('login-screen');
 const loginFormEl       = document.getElementById('login-form');
@@ -1625,36 +1646,103 @@ const registerBtn       = document.getElementById('register-btn');
 const registerError     = document.getElementById('register-error');
 const registerSuccess   = document.getElementById('register-success');
 
-function isAuthed() { return !!localStorage.getItem(SESSION_KEY); }
+function isAuthed() { return !!getSession()?.refresh_token; }
+
+// Supabase Auth(GoTrue) 호출
+const AUTH_ERRORS = {
+  invalid_credentials: '이메일 또는 비밀번호가 틀렸어요.',
+  email_not_confirmed: '이메일 인증을 먼저 완료해 주세요.',
+  user_already_exists: '이미 사용 중인 이메일이에요.',
+  email_exists: '이미 사용 중인 이메일이에요.',
+  weak_password: '비밀번호는 6자 이상이어야 해요.',
+  email_address_invalid: '사용할 수 없는 이메일 주소예요.',
+  over_email_send_rate_limit: '메일 발송 한도를 넘었어요. 잠시 후 다시 시도해 주세요.',
+  over_request_rate_limit: '요청이 너무 많아요. 잠시 후 다시 시도해 주세요.',
+  signup_disabled: '지금은 회원가입을 받지 않아요.',
+};
+
+async function authFetch(path, body, token) {
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/${path}`, {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(body || {}),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const err = new Error(AUTH_ERRORS[data.error_code] || data.msg || data.error_description || `인증 오류 (${res.status})`);
+    err.status = res.status;
+    throw err;
+  }
+  return data;
+}
+
+// 액세스 토큰 갱신 (동시에 여러 번 호출돼도 요청은 한 번만)
+let refreshPromise = null;
+function refreshSession() {
+  refreshPromise ??= (async () => {
+    try {
+      const data = await authFetch('token?grant_type=refresh_token', { refresh_token: getSession()?.refresh_token });
+      setSession(data);
+      return data.access_token;
+    } catch (e) {
+      // 갱신 토큰이 만료·폐기된 경우에만 로그아웃 (네트워크 오류·요청 제한은 유지)
+      if (e.status >= 400 && e.status < 500 && e.status !== 429) { clearSession(); location.reload(); }
+      throw e;
+    } finally {
+      refreshPromise = null;
+    }
+  })();
+  return refreshPromise;
+}
+
+async function getAccessToken() {
+  const s = getSession();
+  if (!s) throw new Error('로그인이 필요해요.');
+  if (s.expires_at - 60 > Date.now() / 1000) return s.access_token;
+  return refreshSession();
+}
+
+async function logout() {
+  const s = getSession();
+  clearSession();
+  // 서버 세션 폐기는 최대 2초만 기다림 (연결이 느려도 화면은 바로 전환)
+  if (s) await Promise.race([
+    authFetch('logout?scope=local', {}, s.access_token).catch(() => {}),
+    new Promise(r => setTimeout(r, 2000)),
+  ]);
+  location.reload();
+}
+
+// 다른 탭에서 로그아웃하면 이 탭도 로그인 화면으로
+window.addEventListener('storage', e => {
+  if (e.key === SESSION_KEY && !e.newValue) location.reload();
+});
 
 /* ─── AUTO-LOGOUT (30분 미입력 시) ─── */
 const IDLE_TIMEOUT = 30 * 60 * 1000;
+const ACTIVE_KEY = 'md_last_active'; // 탭끼리 공유하는 마지막 활동 시각
 let idleTimer = null;
+let lastActiveWrite = 0;
 function resetIdleTimer() {
   if (idleTimer) clearTimeout(idleTimer);
   if (!isAuthed()) return;
-  idleTimer = setTimeout(() => {
-    localStorage.removeItem(SESSION_KEY);
-    location.reload();
-  }, IDLE_TIMEOUT);
+  const now = Date.now();
+  if (now - lastActiveWrite > 10000) { lastActiveWrite = now; localStorage.setItem(ACTIVE_KEY, now); }
+  idleTimer = setTimeout(onIdleTimeout, IDLE_TIMEOUT);
+}
+function onIdleTimeout() {
+  // 다른 탭에서 쓰고 있었다면 로그아웃하지 않고 남은 시간만큼 다시 대기
+  const remaining = IDLE_TIMEOUT - (Date.now() - Number(localStorage.getItem(ACTIVE_KEY) || 0));
+  if (remaining > 0) idleTimer = setTimeout(onIdleTimeout, remaining);
+  else logout();
 }
 ['mousemove','mousedown','keydown','touchstart','scroll','click'].forEach(evt =>
   document.addEventListener(evt, resetIdleTimer, { passive: true })
 );
-
-// 인증 전용 Supabase fetch
-async function authFetch(path, opts = {}) {
-  const h = {
-    'apikey': SUPABASE_KEY,
-    'Authorization': `Bearer ${SUPABASE_KEY}`,
-    'Content-Type': 'application/json',
-    'Prefer': 'return=representation',
-  };
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { headers: h, ...opts });
-  if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
-  if (res.status === 204) return null;
-  return res.json();
-}
 
 async function doLogin() {
   const email    = idInput.value.trim();
@@ -1665,11 +1753,7 @@ async function doLogin() {
   }
   loginBtn.disabled = true;
   try {
-    const rows = await authFetch(`${USERS_TABLE}?email=eq.${encodeURIComponent(email)}&select=password_hash,nickname`);
-    if (!rows || rows.length === 0 || rows[0].password_hash !== simpleHash(password)) {
-      throw new Error('이메일 또는 비밀번호가 틀렸어요.');
-    }
-    localStorage.setItem(SESSION_KEY, email);
+    setSession(await authFetch('token?grant_type=password', { email, password }));
     resetIdleTimer();
     loginScreen.style.display = 'none';
     initApp();
@@ -1711,28 +1795,28 @@ async function doRegister() {
     setTimeout(() => { regNicknameInput.classList.remove('error'); registerError.textContent = ''; }, 1800);
     return;
   }
-  if (password.length < 4) {
-    registerError.textContent = '비밀번호는 4자 이상이어야 해요.';
+  if (password.length < 6) {
+    registerError.textContent = '비밀번호는 6자 이상이어야 해요.';
     regPwInput.classList.add('error');
     setTimeout(() => { regPwInput.classList.remove('error'); registerError.textContent = ''; }, 1800);
     return;
   }
   registerBtn.disabled = true;
   try {
-    await authFetch(USERS_TABLE, {
-      method: 'POST',
-      body: JSON.stringify({ email, nickname, password_hash: simpleHash(password) }),
-    });
-    registerSuccess.textContent = '가입 완료! 로그인해 주세요 🎉';
+    const data = await authFetch('signup', { email, password, data: { nickname } });
+    // 이메일 인증이 켜져 있으면 토큰 없이 응답이 오고, 인증 메일이 발송됨
+    const needsConfirm = !data.access_token;
+    registerSuccess.textContent = needsConfirm
+      ? '인증 메일을 보냈어요. 메일의 링크를 누른 뒤 로그인해 주세요.'
+      : '가입 완료! 로그인해 주세요 🎉';
     regEmailInput.value = '';
     regNicknameInput.value = '';
     regPwInput.value = '';
-    setTimeout(() => { registerSuccess.textContent = ''; showLoginForm(); }, 1600);
+    setTimeout(() => { registerSuccess.textContent = ''; showLoginForm(); }, needsConfirm ? 5000 : 1600);
   } catch(e) {
-    const isConflict = e.message.includes('23505') || e.message.toLowerCase().includes('unique');
-    registerError.textContent = isConflict ? '이미 사용 중인 이메일이에요.' : e.message;
+    registerError.textContent = e.message;
     regEmailInput.classList.add('error');
-    setTimeout(() => { regEmailInput.classList.remove('error'); registerError.textContent = ''; }, 1800);
+    setTimeout(() => { regEmailInput.classList.remove('error'); registerError.textContent = ''; }, 2500);
   } finally {
     registerBtn.disabled = false;
   }
@@ -1767,22 +1851,35 @@ document.getElementById('show-register-btn').addEventListener('click', showRegis
 document.getElementById('show-login-btn').addEventListener('click', showLoginForm);
 
 // ─── SUPABASE ─────────────────────────────────────────────
-const headers = {
-  'apikey': SUPABASE_KEY,
-  'Authorization': `Bearer ${SUPABASE_KEY}`,
-  'Content-Type': 'application/json',
-  'Prefer': 'return=representation',
-};
-
-async function dbFetch(path, opts = {}) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { headers, ...opts });
+// 로그인한 사용자의 토큰으로 호출 → DB의 RLS 정책이 본인 노트만 허용
+async function dbFetch(path, opts = {}, retry = true) {
+  const token = await getAccessToken();
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation',
+    },
+    ...opts,
+  });
+  if (res.status === 401 && retry) {
+    await refreshSession();
+    return dbFetch(path, opts, false);
+  }
   if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
   if (res.status === 204) return null;
   return res.json();
 }
 
-function currentUserEmail() { return localStorage.getItem(SESSION_KEY) || ''; }
-async function loadNotes()         { return (await dbFetch(`${TABLE}?user_email=eq.${encodeURIComponent(currentUserEmail())}&select=*&order=updated_at.desc`)) || []; }
+// 토큰(JWT)에 들어 있는 이메일 — 표시·기록용이며 접근 권한은 DB가 user_id로 판단
+function currentUserEmail() {
+  try {
+    const payload = getSession().access_token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    return JSON.parse(atob(payload)).email || '';
+  } catch { return ''; }
+}
+async function loadNotes()         { return (await dbFetch(`${TABLE}?select=*&order=updated_at.desc`)) || []; }
 async function createNoteDB(data)  { const [r] = await dbFetch(TABLE, { method:'POST', body: JSON.stringify(data) }); return r; }
 async function patchNote(id, data) { const [r] = await dbFetch(`${TABLE}?id=eq.${id}`, { method:'PATCH', body: JSON.stringify(data) }); return r; }
 async function removeNoteDB(id)    { await dbFetch(`${TABLE}?id=eq.${id}`, { method:'DELETE' }); }
@@ -2496,10 +2593,7 @@ document.addEventListener('click', e => {
   fontMenu.setAttribute('aria-hidden', 'true');
 });
 
-document.getElementById('logout-btn').addEventListener('click', () => {
-  localStorage.removeItem(SESSION_KEY);
-  location.reload();
-});
+document.getElementById('logout-btn').addEventListener('click', logout);
 
 // ─── HELP POPUP ─────────────────────────────────────────
 const helpBtn = document.getElementById('help-btn');
