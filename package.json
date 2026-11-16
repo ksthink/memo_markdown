@@ -1,14 +1,13 @@
 {
-  "name": "memo",
+  "name": "memyo",
   "version": "1.0.0",
-  "main": "index.js",
+  "private": true,
+  "type": "module",
+  "description": "브라우저 기반 마크다운 WYSIWYG 노트 에디터",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "esbuild build-entry.js --bundle --format=esm --outfile=milkdown-crepe.bundle.js",
+    "test": "node --test tests/"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
   "dependencies": {
     "@milkdown/crepe": "^7.20.0",
     "esbuild": "^0.28.0"

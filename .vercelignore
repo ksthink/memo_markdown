@@ -1,2 +1,3 @@
 *.sql
 build-entry.js
+tests/

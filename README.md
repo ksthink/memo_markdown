@@ -8,12 +8,12 @@
 ## 📌 소개
 
 **memyo**는 Milkdown(ProseMirror 기반) 에디터 엔진을 사용하는 마크다운 WYSIWYG 노트 에디터입니다.  
-Supabase를 백엔드로 활용해 별도 서버 구축 없이 노트를 클라우드에 저장하며, **단일 HTML 파일 아키텍처**로 복잡한 빌드 과정 없이도 바로 배포할 수 있습니다.
+Supabase를 백엔드로 활용해 별도 서버 구축 없이 노트를 클라우드에 저장하며, **프레임워크와 빌드 단계가 없는 정적 파일 몇 개**로 구성되어 그대로 올리기만 하면 배포됩니다.
 
 ### 핵심 특징
 
 - **제로 프레임워크** — Vanilla HTML / CSS / JS만 사용, 프레임워크 의존 없음
-- **싱글 파일** — `index.html` 하나에 마크업 / 스타일 / 로직 올인원 (~2,100줄)
+- **빌드 없는 정적 파일** — `index.html`(마크업) + `styles.css`(스타일) + 역할별 JS 모듈 몇 개. 브라우저가 ES Module을 직접 불러오므로 앱 자체는 빌드 단계가 없음
 - **서버리스** — Supabase REST API로 DB 처리, Supabase Auth로 인증, 별도 백엔드 불필요
 - **다중 사용자** — 이메일 기반 회원가입/로그인으로 사용자별 노트 격리
 - **반응형** — 데스크톱 / 모바일 완전 대응 (768px 브레이크포인트)
@@ -66,7 +66,7 @@ Supabase를 백엔드로 활용해 별도 서버 구축 없이 노트를 클라�
 | **사이드바 토글** | `☰` 버튼으로 노트 목록 사이드바 접기/펼치기 |
 | **모바일 반응형** | 768px 이하에서 햄버거 메뉴, 노트 목록↔에디터 전환 UI |
 | **커스텀 캐럿** | ProseMirror 기본 캐럿을 숨기고 커스텀 캐럿 표시 (다크: 노란색 `#f0c040`, 라이트: 파란색 `#005FB8`) |
-| **로그인 화면 연출** | cat.gif 이미지 + "당신이 써 내려갈 이야기" 타이프라이터 애니메이션 |
+| **로그인 화면 연출** | 타이핑하는 고양이(`1.png` / `2.png` / `3.png` 교체) + "당신이 써 내려갈 이야기" 타이프라이터 애니메이션 |
 | **토스트 알림** | 하단 중앙에 2.2초간 알림 메시지 표시 |
 | **MonaS12 폰트** | 가독성 좋은 MonaS12 웹폰트 적용 |
 
@@ -130,9 +130,9 @@ Milkdown / ProseMirror 기본 단축키가 모두 지원됩니다:
 |------|------|------|
 | **에디터 엔진** | [Milkdown Crepe](https://milkdown.dev/) (ProseMirror 기반) | v7.20+ |
 | **백엔드 / DB** | [Supabase](https://supabase.com/) (PostgreSQL + REST API) | — |
-| **번들러** | [esbuild](https://esbuild.github.io/) | v0.28+ |
-| **프론트엔드** | Vanilla HTML / CSS / JS (싱글 파일, 프레임워크 없음) | ES Modules |
-| **폰트** | MonaS12 (CDN: `fontcdn-six.vercel.app`) | — |
+| **번들러** | [esbuild](https://esbuild.github.io/) (`milkdown-crepe.bundle.js` 재빌드 전용) | v0.28+ |
+| **프론트엔드** | Vanilla HTML / CSS / JS (정적 파일, 프레임워크·빌드 없음) | ES Modules |
+| **폰트** | MonaS12 외 5종 (CDN: `font.ksthink.com`, `cdn.jsdelivr.net`) | — |
 | **하이라이팅** | CSS Custom Highlight API (`::highlight()`) | — |
 | **레이아웃** | CSS Grid (`280px 1fr` 2-column) + 반응형 | — |
 
@@ -141,17 +141,31 @@ Milkdown / ProseMirror 기본 단축키가 모두 지원됩니다:
 ## 📁 프로젝트 구조
 
 ```
-memo/
-├── index.html                  # 메인 앱 (HTML + CSS + JS 올인원, ~2100줄)
+memyo/
+├── index.html                  # 마크업 (~270줄)
+├── styles.css                  # 앱 스타일 전체 (~1,220줄)
+├── app.js                      # UI 로직: 테마·글꼴, 로그인 화면, 자동 로그아웃, 노트 목록, 에디터, TOC, 해시태그, 자동 저장, 비밀번호 변경, 단축키 (~1,060줄)
+├── auth.js                     # Supabase Auth: 세션 저장, 로그인·가입 API 호출, 토큰 갱신, 로그아웃, 비밀번호 변경
+├── db.js                       # notes 테이블 접근 (Supabase REST)
+├── config.js                   # Supabase URL과 공개용(anon) 키
+├── login-anim.js               # 로그인 화면 타이프라이터 문구 + 타이핑하는 고양이
+├── 1.png / 2.png / 3.png       # 로그인 화면 고양이 이미지 (login-anim.js가 교체)
+├── setting.svg                 # 설정(톱니바퀴) 아이콘
 ├── milkdown-crepe.bundle.js    # Milkdown Crepe + replaceAll + editorViewCtx 번들 (esbuild 출력)
 ├── milkdown-common.css         # Milkdown 에디터 공통 테마 CSS (~2000줄)
 ├── milkdown-frame-dark.css     # Milkdown 다크/라이트 모드 CSS 변수 오버라이드
 ├── build-entry.js              # esbuild 엔트리 포인트 (3줄)
-├── package.json                # npm 의존성 정의
+├── package.json                # npm 의존성과 스크립트 (build, test)
+├── tests/modules.test.mjs      # auth.js / db.js 단위 테스트
+├── vercel.json                 # Vercel 배포 설정: 보안 헤더 (CSP 등)
+├── .vercelignore               # 배포에서 제외할 파일 (*.sql, build-entry.js, tests/)
+├── .gitignore                  # node_modules 제외
 ├── schema.sql                  # 새 프로젝트용 DB 스키마 (notes 테이블 + RLS 정책)
 ├── migrate-to-supabase-auth.sql # 기존 DB를 Supabase Auth + RLS로 옮기는 스크립트
 └── README.md                   # 이 문서
 ```
+
+> 앱의 JS 파일은 브라우저가 직접 불러오는 네이티브 ES Module입니다 (`login-anim.js`만 일반 스크립트). esbuild는 `milkdown-crepe.bundle.js`를 다시 만들 때만 사용합니다.
 
 ### 번들 엔트리 (`build-entry.js`)
 
@@ -161,7 +175,7 @@ export { replaceAll } from '@milkdown/utils';
 export { editorViewCtx } from '@milkdown/core';
 ```
 
-> Milkdown의 핵심 모듈 3개만 선별 re-export하여, `index.html`에서 ES Module import로 사용합니다.
+> Milkdown의 핵심 모듈 3개만 선별 re-export하여, `app.js`에서 ES Module import로 사용합니다.
 
 ---
 
@@ -206,7 +220,7 @@ npx esbuild build-entry.js \
   --outfile=milkdown-crepe.bundle.js
 ```
 
-> 출력: `milkdown-crepe.bundle.js` (~4.7MB)  
+> 출력: `milkdown-crepe.bundle.js` (~5MB) — `npm run build`로도 실행할 수 있습니다.  
 > ⚠️ 이미 빌드된 번들이 포함되어 있으므로, 수정하지 않았다면 이 단계는 건너뛸 수 있습니다.
 
 ### 3단계: Supabase 설정
@@ -215,12 +229,14 @@ npx esbuild build-entry.js \
 2. **SQL Editor**에서 `schema.sql`을 실행하여 테이블을 생성합니다.
    (예전 방식의 DB를 쓰고 있었다면 `migrate-to-supabase-auth.sql`의 안내를 따릅니다.)
 3. **Authentication → URL Configuration**의 Site URL을 앱 주소로 설정합니다. (인증 메일의 링크가 돌아올 주소)
-4. `index.html` 내의 Supabase 설정값을 본인의 프로젝트 값으로 교체합니다:
+4. `config.js`의 Supabase 설정값을 본인의 프로젝트 값으로 교체합니다:
 
 ```javascript
-const SUPABASE_URL = 'https://your-project.supabase.co';
-const SUPABASE_KEY = 'your-anon-key';
+export const SUPABASE_URL = 'https://your-project.supabase.co';
+export const SUPABASE_KEY = 'your-anon-key';
 ```
+
+5. Vercel에 배포한다면 `vercel.json`의 CSP(`connect-src`, `font-src`)에 들어 있는 Supabase 주소도 본인 프로젝트 주소로 바꿉니다. 그대로 두면 브라우저가 API 요청을 차단합니다.
 
 ### 4단계: 웹 서버 실행
 
@@ -241,6 +257,16 @@ npx serve -p 8089
 브라우저에서 `http://localhost:8089`에 접속하여 회원가입 후 로그인하면 사용할 수 있습니다.
 
 > ⚠️ ES Module(`import`)을 사용하므로, `file://` 프로토콜로는 동작하지 않습니다. 반드시 HTTP(S) 서버를 통해 접속하세요.
+
+---
+
+## 🧪 테스트
+
+`auth.js`와 `db.js`의 로그인·토큰 갱신·노트 저장 로직을 가짜 서버로 검증하는 단위 테스트가 있습니다. 네트워크에 접속하지 않습니다.
+
+```bash
+npm test
+```
 
 ---
 
@@ -337,6 +363,13 @@ memyo는 **Supabase Auth**의 이메일 + 비밀번호 인증을 사용합니다
 | **자동 로그아웃** | 30분간 입력이 없으면 로그아웃 |
 | **실패 시** | 에러 메시지 + 입력창 `shake` 애니메이션 |
 
+### 보안
+
+- **Supabase Auth + RLS** — 인증은 Supabase Auth가 처리하고, DB의 RLS 정책(`user_id = auth.uid()`)이 본인 노트만 읽고 쓰도록 제한합니다.
+- **`config.js`의 anon 키는 공개용** — 브라우저에 노출되는 것이 정상이며, 실제 접근 권한은 RLS 정책이 결정합니다.
+- **보안 헤더** — `vercel.json`에서 CSP, `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`를 설정합니다.
+- **`service_role` 키 금지** — RLS를 우회하는 키이므로 `config.js`를 포함한 클라이언트 파일에 절대 넣지 않습니다.
+
 ---
 
 ## 🧩 아키텍처 상세
@@ -370,7 +403,7 @@ memyo는 **Supabase Auth**의 이메일 + 비밀번호 인증을 사용합니다
 
 | 컴포넌트 | 선택자 | 설명 |
 |----------|--------|------|
-| 로그인 화면 | `#login-screen` | 로그인/회원가입 폼 전환, cat.gif, 타이프라이터 애니메이션, 에러/성공 메시지 |
+| 로그인 화면 | `#login-screen` | 로그인/회원가입 폼 전환, 타이핑하는 고양이(`#login-cat-img`), 타이프라이터 애니메이션, 에러/성공 메시지 |
 | 로딩 스피너 | `#loading` | 앱 초기화 중 스피너 + "불러오는 중..." |
 | 사이드바 | `#sidebar` | 헤더(로고 + 제목), 새 노트/해시태그 버튼, 검색, 정렬, 노트 목록, 로그아웃 |
 | 해시태그 패널 | `#hashtag-panel` | 태그 목록(빈도수), 필터 토글, "필터 해제" 버튼 |
@@ -387,7 +420,9 @@ memyo는 **Supabase Auth**의 이메일 + 비밀번호 인증을 사용합니다
 
 ### JavaScript 함수 맵
 
-#### 인증 관련
+> 설정값(`SUPABASE_URL`, `SUPABASE_KEY`)은 `config.js`에, 로그인 화면 애니메이션은 `login-anim.js`에 있습니다.
+
+#### 인증 관련 — `auth.js`
 
 | 함수 | 설명 |
 |------|------|
@@ -397,19 +432,25 @@ memyo는 **Supabase Auth**의 이메일 + 비밀번호 인증을 사용합니다
 | `getAccessToken()` | 유효한 액세스 토큰 반환 (만료 임박 시 갱신) |
 | `refreshSession()` | 갱신 토큰으로 새 토큰 발급 |
 | `currentUserEmail()` | 토큰에 담긴 사용자 이메일 반환 |
+| `logout()` | 세션 삭제 후 로그인 화면으로 복귀 |
+| `changePassword(currentPassword, newPassword)` | 현재 비밀번호 확인 후 새 비밀번호로 변경 |
+
+#### 로그인 화면 관련 — `app.js`
+
+| 함수 | 설명 |
+|------|------|
 | `doLogin()` | 이메일 + 비밀번호 로그인 |
 | `doRegister()` | 회원가입 (이메일/닉네임/비밀번호 유효성 검증 포함) |
-| `logout()` | 세션 삭제 후 로그인 화면으로 복귀 |
 | `showLoginForm()` / `showRegisterForm()` | 로그인·회원가입 폼 전환 |
 
-#### 테마 관련
+#### 테마 관련 — `app.js`
 
 | 함수 | 설명 |
 |------|------|
 | `applyTheme(theme)` | `data-theme` 속성 설정, 아이콘(D/W) 변경, `localStorage` 저장 |
 | `toggleTheme()` | 현재 테마 감지 후 반대 테마로 전환 |
 
-#### Supabase API
+#### Supabase API — `db.js`
 
 | 함수 | 설명 |
 |------|------|
@@ -419,7 +460,7 @@ memyo는 **Supabase Auth**의 이메일 + 비밀번호 인증을 사용합니다
 | `patchNote(id, data)` | PATCH로 노트 업데이트 |
 | `removeNoteDB(id)` | DELETE로 노트 삭제 |
 
-#### 에디터 관련
+#### 에디터 관련 — `app.js`
 
 | 함수 | 설명 |
 |------|------|
@@ -432,7 +473,7 @@ memyo는 **Supabase Auth**의 이메일 + 비밀번호 인증을 사용합니다
 | `setupImageResizeGrips()` | 이미지에 리사이즈 그립 핸들 추가 + `referrerpolicy` 설정 |
 | `scheduleGrips()` | 리사이즈 그립 500ms 디바운스 |
 
-#### TOC (목차) 관련
+#### TOC (목차) 관련 — `app.js`
 
 | 함수 | 설명 |
 |------|------|
@@ -440,7 +481,7 @@ memyo는 **Supabase Auth**의 이메일 + 비밀번호 인증을 사용합니다
 | `updateTocActive()` | 스크롤 위치에 따라 활성 목차 항목 표시 |
 | `scheduleToc()` | TOC 400ms 디바운스 |
 
-#### 해시태그 관련
+#### 해시태그 관련 — `app.js`
 
 | 함수 | 설명 |
 |------|------|
@@ -450,7 +491,7 @@ memyo는 **Supabase Auth**의 이메일 + 비밀번호 인증을 사용합니다
 | `scheduleHighlight()` | 300ms 디바운스로 해시태그 하이라이트 예약 |
 | `applyHashtagHighlight()` | CSS Highlight API로 에디터 내 해시태그 시각적 하이라이트 |
 
-#### 노트 관리 관련
+#### 노트 관리 관련 — `app.js`
 
 | 함수 | 설명 |
 |------|------|
@@ -460,14 +501,14 @@ memyo는 **Supabase Auth**의 이메일 + 비밀번호 인증을 사용합니다
 | `renderNoteList()` | 검색어 + 태그 필터 + 정렬 적용 후 노트 목록 렌더링 |
 | `updateSortButtons()` | 정렬 버튼 활성 상태 업데이트 |
 
-#### 모바일 관련
+#### 모바일 관련 — `app.js`
 
 | 함수 | 설명 |
 |------|------|
 | `isMobileView()` | `window.innerWidth <= 768` 확인 |
 | `updateMobileHamburgerIcon()` | 모바일 모드별 햄버거 아이콘 전환 |
 
-#### 유틸리티
+#### 유틸리티 — `app.js`
 
 | 함수 | 설명 |
 |------|------|
@@ -547,7 +588,7 @@ memyo는 **Supabase Auth**의 이메일 + 비밀번호 인증을 사용합니다
 - **다중 사용자 지원**: 이메일 기반 회원가입/로그인 시스템
 - `users` 테이블 추가, `notes.user_email` 컬럼으로 사용자별 데이터 격리
 - `localStorage` 기반 세션 유지 (브라우저 닫아도 로그인 유지)
-- **로그인 화면 연출**: cat.gif + "당신이 써 내려갈 이야기" 타이프라이터 애니메이션
+- **로그인 화면 연출**: 타이핑하는 고양이 + "당신이 써 내려갈 이야기" 타이프라이터 애니메이션
 - **TOC (목차) 오버레이**: H1~H6 기반 목차 자동 생성, 스크롤 연동, 클릭 이동
 - **이미지 리사이즈 그립**: 에디터 내 이미지 드래그 크기 조절
 - **노트 정렬**: 생성일 ▲▼ / 제목 가나다순(ㄱ/ㅎ) 4가지 옵션
@@ -555,6 +596,7 @@ memyo는 **Supabase Auth**의 이메일 + 비밀번호 인증을 사용합니다
 - **집중 모드 글꼴 확대**: 모든 타이포그래피 ×1.2 스케일
 - **Blockquote Backspace Fix**: 인용문 맨 앞에서 Backspace 시 본문으로 변환
 - 이미지 `referrerpolicy="no-referrer"` 자동 설정
+- **파일 분리**: 하나였던 `index.html`을 `index.html` / `styles.css` / `app.js` / `auth.js` / `db.js` / `config.js` / `login-anim.js`로 분리 (빌드 단계는 여전히 없음)
 
 ### v1.3
 - 블랙 & 화이트 미니멀 테마로 전면 리디자인
